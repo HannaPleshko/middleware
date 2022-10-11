@@ -1,7 +1,5 @@
 # Middleware
 
-[TOC]
-
 ## Prerequisites
 
 - Node.js 12 ( Node.js 10 would also work, but 12 is used when develop & test)
@@ -9,7 +7,7 @@
 - Postman for verification
 
 
-## Run EWS Middleware services
+## Run Middleware services
 
 ```bash
 # Install dependencies
