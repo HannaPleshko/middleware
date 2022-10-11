@@ -1,0 +1,679 @@
+diff --git a/node_modules/strong-soap/src/base.js b/node_modules/strong-soap/src/base.js
+index 419998e..203e48d 100644
+--- a/node_modules/strong-soap/src/base.js
++++ b/node_modules/strong-soap/src/base.js
+@@ -105,6 +105,7 @@ class Base extends EventEmitter {
+         case "http://schemas.xmlsoap.org/wsdl/soap12/": // wsdlsoap12
+         case "http://schemas.xmlsoap.org/soap/encoding/" : // soapenc
+         case "http://www.w3.org/2001/XMLSchema" : // xsd
++        case "http://ws-i.org/schemas/conformanceClaim/": // wsi
+           continue;
+       }
+       if (~nsURI.indexOf('http://schemas.xmlsoap.org/'))
+@@ -113,12 +114,12 @@ class Base extends EventEmitter {
+         continue;
+       if (~nsURI.indexOf('http://xml.apache.org/'))
+         continue;
+-      nsContext.addNamespace(prefix, nsURI);
++      nsContext.declareNamespace(prefix, nsURI);
+     }
+     return nsContext;
+   }
+ 
+-  addSoapHeadersToEnvelope(soapHeaderElement, xmlHandler) {
++  addSoapHeadersToEnvelope(soapHeaderElement, xmlHandler, nsContext) {
+     for (let i = 0, n = this.soapHeaders.length; i < n; i++) {
+       let soapHeader = this.soapHeaders[i];
+       let elementDescriptor;
+@@ -128,7 +129,7 @@ class Base extends EventEmitter {
+             elementDescriptor =
+               element && element.describe(this.wsdl.definitions);
+         }
+-        xmlHandler.jsonToXml(soapHeaderElement, null, elementDescriptor,
++        xmlHandler.jsonToXml(soapHeaderElement, nsContext, elementDescriptor,
+           soapHeader.value);
+       } else { //soapHeader has XML value
+         XMLHandler.parseXml(soapHeaderElement, soapHeader.xml);
+diff --git a/node_modules/strong-soap/src/parser/wsdl.js b/node_modules/strong-soap/src/parser/wsdl.js
+index 3ff2d45..60f3079 100644
+--- a/node_modules/strong-soap/src/parser/wsdl.js
++++ b/node_modules/strong-soap/src/parser/wsdl.js
+@@ -184,6 +184,9 @@ class WSDL {
+     if (options.NTLMSecurity) {
+       this.options.NTLMSecurity = options.NTLMSecurity;
+     }
++    if (options.ignoreUnknownProperties) {
++      this.options.ignoreUnknownProperties = options.ignoreUnknownProperties;
++    }
+   }
+ 
+   _processNextInclude(syncLoad, includes, callback) {
+diff --git a/node_modules/strong-soap/src/parser/xmlHandler.js b/node_modules/strong-soap/src/parser/xmlHandler.js
+index 82c3c58..d9b82fa 100644
+--- a/node_modules/strong-soap/src/parser/xmlHandler.js
++++ b/node_modules/strong-soap/src/parser/xmlHandler.js
+@@ -13,6 +13,7 @@ var selectn = require('selectn');
+ var debug = require('debug')('strong-soap:xmlhandler');
+ var descriptor = require('./xsd/descriptor');
+ var ElementDescriptor = descriptor.ElementDescriptor;
++var AnyElementDescriptor = descriptor.AnyElementDescriptor;
+ var AttributeDescriptor = descriptor.AttributeDescriptor;
+ var TypeDescriptor = descriptor.TypeDescriptor;
+ var QName = require('./qname');
+@@ -56,6 +57,7 @@ class XMLHandler {
+       return node;
+     }
+ 
++    let originalVal = val;
+     if (descriptor instanceof ElementDescriptor) {
+       name = descriptor.qname.name;
+       let isSimple = descriptor.isSimple;
+@@ -160,6 +162,9 @@ class XMLHandler {
+             this.addAttributes(element, nsContext, descriptor, val, attrs);
+           }
+         }
++        if (typeof originalVal === 'object' && descriptor.attributes && descriptor.attributes.length) {
++            this.addAttributes(element, nsContext, descriptor, originalVal, originalVal);
++        }
+         if (nameSpaceContextCreated) {
+           nsContext.popContext();
+         }
+@@ -292,14 +297,21 @@ class XMLHandler {
+     var xsiType = this.getXsiType(descriptor, attrs);
+     descriptor = xsiType || descriptor;
+ 
+-    var elements = {}, attributes = {};
++    var elements = {}, attributes = {}, types = {};
+     var elementOrder = [];
++    var hasLaxElementDescriptor = false;
+     if (descriptor != null) {
+       for (let i = 0, n = descriptor.elements.length; i < n; i++) {
+         let elementDescriptor = descriptor.elements[i];
+-        let elementName = elementDescriptor.qname.name;
+-        elements[elementName] = elementDescriptor;
+-        elementOrder.push(elementName);
++        if (elementDescriptor.qname) {
++            elements[elementDescriptor.qname.name] = elementDescriptor;
++            elementOrder.push(elementDescriptor.qname.name);
++        } else if (elementDescriptor instanceof AnyElementDescriptor) {
++            hasLaxElementDescriptor = elementDescriptor.processContents === 'lax';
++        }
++        if (elementDescriptor.type) {
++            types[elementDescriptor.type.name] = elementDescriptor;
++        }
+       }
+     }
+ 
+@@ -315,11 +327,31 @@ class XMLHandler {
+     if (!Array.isArray(val)) {
+       const names = this._sortKeys(val, elementOrder);
+       for (let p of names) {
+-        if (p === this.options.attributesKey)
++        if (p === this.options.attributesKey || p === '$qname')
+           continue;
+ 	      let child = val[p];
+-	      let childDescriptor = elements[p] || attributes[p];
++          let childDescriptor = elements[p] || attributes[p];
++          if (!childDescriptor && hasLaxElementDescriptor) {
++            for (const sk of Object.keys(this.schemas)) {
++                childDescriptor = this.schemas[sk]['elements'][p];
++                if (childDescriptor) {
++                    childDescriptor = childDescriptor.describe({schemas: this.schemas});
++                }
++            }
++          }
+ 	      if (childDescriptor == null) {
++            if (Array.isArray(child)) {
++                for (let i = 0, n = child.length; i < n; i++) {
++                    childDescriptor = elements[child[i].$qname] || elements[child[i].constructor.name] || types[child[i].constructor.name];
++                    if (!childDescriptor && !this.options.ignoreUnknownProperties) {
++                        childDescriptor = new ElementDescriptor(QName.parse(p), null, 'unqualified', Array.isArray(child[i]));
++                    }
++                    if (childDescriptor) {
++                        node = this.jsonToXml(node, nsContext, childDescriptor, child[i]);
++                    }
++                }
++                continue;
++            }
+ 	        if (this.options.ignoreUnknownProperties)
+             continue;
+           else
+@@ -329,7 +361,7 @@ class XMLHandler {
+         if (childDescriptor) {
+           this.jsonToXml(node, nsContext, childDescriptor, child);
+         }
+-	    }
++	  }
+     }
+ 
+     this.addAttributes(node, nsContext, descriptor, val, attrs);
+@@ -347,6 +379,9 @@ class XMLHandler {
+     if (attrs != null && typeof attrs === 'object') {
+       for (let p in attrs) {
+         let child = attrs[p];
++        if (child === undefined) {
++            continue;
++        }
+         // if field is $xsiType add xsi:type attribute
+         if (p === this.options.xsiTypeKey) {
+           let xsiType;
+@@ -356,14 +391,16 @@ class XMLHandler {
+           } else {
+             xsiType = QName.parse(child);
+           }
+-          declareNamespace(nsContext, node, 'xsi', helper.namespaces.xsi);
+-          let mapping = declareNamespace(nsContext, node, xsiType.prefix,
+-            xsiType.nsURI);
++          let mapping = nsContext.getPrefixMapping(xsiType.nsURI);
+           let prefix = mapping ? mapping.prefix : xsiType.prefix;
+           node.attribute('xsi:type', prefix ? prefix + ':' + xsiType.name :
+             xsiType.name);
+           continue;
+         }
++        if (p && p.startsWith('xml:')) {
++          node.attribute(p, child);
++          continue;
++        }
+         let childDescriptor = attributes[p];
+         if (childDescriptor == null) {
+           if (this.options.ignoreUnknownProperties) continue;
+@@ -384,6 +421,7 @@ class XMLHandler {
+     nsURI = nsURI || 'http://schemas.xmlsoap.org/soap/envelope/';
+     doc.attribute('xmlns:' + prefix,
+       nsURI);
++    doc.attribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+     let header = doc.element(prefix + ':Header');
+     let body = doc.element(prefix + ':Body');
+     return {
+@@ -525,7 +563,7 @@ class XMLHandler {
+     // Top object has no other elements or attributes
+     if (top.object === undefined) {
+       top.object = val;
+-    } else if (top.object.constructor === Object) {
++    } else if (typeof top.object === 'object') {
+       // Top object already has attributes or elements
+       let value = top.object[this.options.valueKey];
+       if (value !== undefined) {
+@@ -539,7 +577,7 @@ class XMLHandler {
+     }
+   }
+ 
+-  xmlToJson(nsContext, xml, descriptor) {
++  xmlToJson(nsContext, xml, descriptor, binding, definitions, objectFactory) {
+     var self = this;
+     var p = sax.parser(true);
+     nsContext = nsContext || new NamespaceContext();
+@@ -547,16 +585,37 @@ class XMLHandler {
+     var refs = {}, id; // {id: {hrefs:[], obj:}, ...}
+     var stack = [{name: null, object: root, descriptor: descriptor}];
+     var options = this.options;
++    var operationName;
+ 
+     p.onopentag = function(node) {
+       nsContext.pushContext();
+       var top = stack[stack.length - 1];
+-      var descriptor = top.descriptor;
++      var descriptor;
+       var nsName = node.name;
+       var attrs = node.attributes;
+       var obj = undefined;
+       var elementAttributes = null;
+ 
++      var elementQName = QName.parse(nsName);
++      elementQName.nsURI = nsContext.getNamespaceURI(elementQName.prefix);
++
++      if (!operationName && top.name === 'Body' && stack.length === 3) {
++        var operations = binding.operations;
++        for (var name in operations) {
++          var inputParts = operations[name].input.message.parts;
++          //find the first part of the input message. There could be more than one parts in input message.
++          var firstInPart = inputParts[Object.keys(inputParts)[0]];
++          if(elementQName.name === firstInPart.element.$name) {
++            operationName = operations[name].$name;
++            var operation  = binding.operations[operationName];
++            var opdesc = operation.describe(definitions);
++            top.descriptor = opdesc.inputEnvelope.findElement('Envelope').findElement(top.name);
++            break;
++          }
++        }
++      }
++      descriptor = top.descriptor && top.descriptor.findElement(elementQName.name);
++
+       // Register namespaces 1st
+       for (let a in attrs) {
+         if (/^xmlns:|^xmlns$/.test(a)) {
+@@ -599,22 +658,25 @@ class XMLHandler {
+         if (isXsiType) {
+           // $xsiType object has two fields - type and xmlns
+           xsiType = {};
+-          xsiType.type = attrs[a];
++          xsiType.type = attrValue;
+           xsiType.xmlns = xsiXmlns;
+           elementAttributes[options.xsiTypeKey] = xsiType;
+         } else {
+-          elementAttributes[attrName] = attrs[a];
++          elementAttributes[attrName] = attrValue;
+         }
+       }
+ 
++      if (elementAttributes || (top.name === 'Body' && stack.length === 3)) {
++        if (descriptor && objectFactory) {
++          obj = descriptor.type ? objectFactory(descriptor.type.name) : objectFactory(descriptor.qname.name);
++        } else {
++          obj = {};
++        }
++      }
+       if (elementAttributes) {
+-        obj = {};
+-        obj[self.options.attributesKey] = elementAttributes;
++        Object.assign(obj, elementAttributes);
+       }
+ 
+-      var elementQName = QName.parse(nsName);
+-      elementQName.nsURI = nsContext.getNamespaceURI(elementQName.prefix);
+-
+       // SOAP href (#id)
+       if (attrs.href != null) {
+         id = attrs.href.substr(1);
+@@ -634,7 +696,7 @@ class XMLHandler {
+       stack.push({
+         name: elementQName.name,
+         object: obj,
+-        descriptor: descriptor && descriptor.findElement(elementQName.name),
++        descriptor,
+         id: attrs.id,
+       });
+     };
+@@ -645,7 +707,11 @@ class XMLHandler {
+       var current = stack.pop();
+       var top = stack[stack.length - 1];
+       if (top.object === undefined) {
+-        top.object = {};
++          if (top.descriptor && top.descriptor.type && objectFactory) {
++            top.object = objectFactory(top.descriptor.type.name);
++          } else {
++            top.object = {};
++          }
+       }
+       if (top.object !== null) {
+         if (typeof top.object === 'object' && elementName in top.object) {
+@@ -659,10 +725,14 @@ class XMLHandler {
+             top.object[elementName] = [val, current.object];
+           }
+         } else {
+-          if (current.descriptor && current.descriptor.isMany) {
+-            top.object[elementName] = [current.object];
++          if (typeof top.object.push === 'function' && current.descriptor && current.descriptor.isMany) {
++            top.object.push(current.object);
+           } else {
+             top.object[elementName] = current.object;
++            if (current.text && current.descriptor && current.descriptor.jsType === Date) {
++              // Save the original string for Date values
++              top.object[elementName + "String"] = current.text;
++            }
+           }
+         }
+       }
+@@ -697,6 +767,9 @@ class XMLHandler {
+       var descriptor = top.descriptor;
+       var value = parseValue(text, descriptor);
+       self._processText(top, value);
++      if (descriptor && descriptor.jsType === Date) {
++        top.text = text; // Save original string for date
++      }
+     };
+ 
+     p.write(xml).close();
+@@ -859,6 +932,8 @@ function parseValue(text, descriptor) {
+     }
+   } else if (typeof jsType === 'function') {
+     value = jsType(text);
++  } else if (descriptor && descriptor.type.name === 'int') {
++    value = parseInt(text);
+   }
+   return value;
+ }
+diff --git a/node_modules/strong-soap/src/parser/xsd/complexContent.js b/node_modules/strong-soap/src/parser/xsd/complexContent.js
+index 63e835c..446a234 100644
+--- a/node_modules/strong-soap/src/parser/xsd/complexContent.js
++++ b/node_modules/strong-soap/src/parser/xsd/complexContent.js
+@@ -14,7 +14,7 @@ class ComplexContent extends XSDElement {
+   }
+ 
+   describe(definitions) {
+-    if (this.descriptor) return this.descriptor;
++    // if (this.descriptor) return this.descriptor;
+     var descriptor = this.descriptor =
+       new XSDElement.TypeDescriptor();
+     var children = this.children || [];
+diff --git a/node_modules/strong-soap/src/parser/xsd/complexType.js b/node_modules/strong-soap/src/parser/xsd/complexType.js
+index 02514b9..faf7aa7 100644
+--- a/node_modules/strong-soap/src/parser/xsd/complexType.js
++++ b/node_modules/strong-soap/src/parser/xsd/complexType.js
+@@ -18,7 +18,7 @@ class ComplexType extends XSDElement {
+   }
+ 
+   describe(definitions) {
+-    if (this.descriptor) return this.descriptor;
++    // if (this.descriptor && !this.$abstract) return this.descriptor;
+     var descriptor = this.descriptor =
+       new XSDElement.TypeDescriptor();
+     if (this.$mixed) {
+diff --git a/node_modules/strong-soap/src/parser/xsd/descriptor.js b/node_modules/strong-soap/src/parser/xsd/descriptor.js
+index a898bfb..fd4a745 100644
+--- a/node_modules/strong-soap/src/parser/xsd/descriptor.js
++++ b/node_modules/strong-soap/src/parser/xsd/descriptor.js
+@@ -108,21 +108,29 @@ class ElementDescriptor extends TypeDescriptor {
+ 
+   clone(isMany) {
+     // Check if the referencing element or this element has 'maxOccurs>1'
+-    isMany = (!!isMany) || this.isMany;
+-    var copy = new ElementDescriptor(this.qname, this.type, this.form, isMany);
+-    copy.isNillable = this.isNillable;
+-    copy.isSimple = this.isSimple;
+-    if (this.jsType) copy.jsType = this.jsType;
+-    if (this.elements != null) copy.elements = this.elements;
+-    if (this.attributes != null) copy.attributes = this.attributes;
+-    if (this.mixed != null) copy.mixed = this.mixed;
+-    copy.refOriginal = this;
+-    return copy;
++    this.isMany = (!!isMany) || this.isMany;
++    // var copy = new ElementDescriptor(this.qname, this.type, this.form, isMany);
++    // copy.isNillable = this.isNillable;
++    // copy.isSimple = this.isSimple;
++    // if (this.jsType) copy.jsType = this.jsType;
++    // if (this.elements != null) copy.elements = this.elements;
++    // if (this.attributes != null) copy.attributes = this.attributes;
++    // if (this.mixed != null) copy.mixed = this.mixed;
++    // copy.refOriginal = this;
++    // return copy;
++    return this;
++  }
++}
++class AnyElementDescriptor extends ElementDescriptor {
++  constructor(processContents, isMany) {
++    super(null, null, null, isMany);
++    this.processContents = processContents;
+   }
+ }
+ 
+ module.exports = {
+   ElementDescriptor: ElementDescriptor,
++  AnyElementDescriptor: AnyElementDescriptor,
+   AttributeDescriptor: AttributeDescriptor,
+   TypeDescriptor: TypeDescriptor
+ };
+diff --git a/node_modules/strong-soap/src/parser/xsd/element.js b/node_modules/strong-soap/src/parser/xsd/element.js
+index 8e645b3..f3a5940 100644
+--- a/node_modules/strong-soap/src/parser/xsd/element.js
++++ b/node_modules/strong-soap/src/parser/xsd/element.js
+@@ -97,9 +97,11 @@ class Element extends XSDElement {
+     } else if (this.$type) {
+       this.type = this.resolveSchemaObject(schemas, 'type', this.$type);
+     }
+-    if (this.substitutionGroup) {
+-      this.substitutionGroup = this.resolveSchemaObject(
++    if (this.$substitutionGroup) {
++      var substitutionGroup = this.resolveSchemaObject(
+         schemas, 'element', this.$substitutionGroup);
++      substitutionGroup.$substitutions = substitutionGroup.$substitutions || [];
++      substitutionGroup.$substitutions.push(this);
+     }
+   }
+ 
+diff --git a/node_modules/strong-soap/src/parser/xsd/extension.js b/node_modules/strong-soap/src/parser/xsd/extension.js
+index 0b5f785..6e479e7 100644
+--- a/node_modules/strong-soap/src/parser/xsd/extension.js
++++ b/node_modules/strong-soap/src/parser/xsd/extension.js
+@@ -18,7 +18,7 @@ class Extension extends XSDElement {
+   }
+ 
+   describe(definitions) {
+-    if (this.descriptor) return this.descriptor;
++    // if (this.descriptor) return this.descriptor;
+     var descriptor = this.descriptor =
+       new XSDElement.TypeDescriptor();
+     if (this.base) {
+diff --git a/node_modules/strong-soap/src/parser/xsd/simpleType.js b/node_modules/strong-soap/src/parser/xsd/simpleType.js
+index 60fba38..02a8958 100644
+--- a/node_modules/strong-soap/src/parser/xsd/simpleType.js
++++ b/node_modules/strong-soap/src/parser/xsd/simpleType.js
+@@ -39,6 +39,7 @@ class SimpleType extends XSDElement {
+       if (this.restriction.base) {
+         // Use the base type
+         this.type = this.restriction.base.type;
++        this.jsType = this.restriction.base.jsType;
+       }
+     } else if (this.list) {
+       this.list.postProcess(definitions);
+diff --git a/node_modules/strong-soap/src/parser/xsd/xsdElement.js b/node_modules/strong-soap/src/parser/xsd/xsdElement.js
+index 619728d..f44b8de 100644
+--- a/node_modules/strong-soap/src/parser/xsd/xsdElement.js
++++ b/node_modules/strong-soap/src/parser/xsd/xsdElement.js
+@@ -16,7 +16,12 @@ class XSDElement extends Element {
+ 
+   describeChildren(definitions, descriptor) {
+     var children = this.children || [];
+-    if (children.length === 0) return descriptor;
++    if (children.length === 0) {
++        if (this.constructor.name === 'Any') {
++            descriptor = new XSDElement.AnyElementDescriptor(this.$processContents, this.isMany());
++        }
++        return descriptor;
++    };
+     descriptor = descriptor || new XSDElement.TypeDescriptor();
+ 
+     var isMany = this.isMany();
+@@ -25,6 +30,14 @@ class XSDElement extends Element {
+       childDescriptor = child.describe(definitions);
+       if (childDescriptor) {
+         descriptor.add(childDescriptor, isMany);
++
++        if (child.ref && child.ref.$substitutions) {
++            var childIsMany = child.isMany() || (child.parent && child.parent.name === 'choice' && child.parent.isMany());
++            child.ref.$substitutions.forEach(sub => {
++                var subDescriptor = sub.describe(definitions);
++                descriptor.add(subDescriptor, childIsMany);
++            });
++        }
+       }
+     }
+     return descriptor;
+@@ -53,6 +66,7 @@ XSDElement.allowedChildren = ['annotation'];
+ 
+ // Descriptors
+ XSDElement.ElementDescriptor = descriptor.ElementDescriptor;
++XSDElement.AnyElementDescriptor = descriptor.AnyElementDescriptor;
+ XSDElement.AttributeDescriptor = descriptor.AttributeDescriptor;
+ XSDElement.TypeDescriptor = descriptor.TypeDescriptor;
+ 
+diff --git a/node_modules/strong-soap/src/server.js b/node_modules/strong-soap/src/server.js
+index 54e9016..47eca9d 100644
+--- a/node_modules/strong-soap/src/server.js
++++ b/node_modules/strong-soap/src/server.js
+@@ -14,7 +14,8 @@ var url = require('url'),
+   toXMLDate = require('./utils').toXMLDate,
+   util = require('util'),
+   debug = require('debug')('strong-soap:server'),
+-  debugDetail = require('debug')('strong-soap:server:detail');
++  debugDetail = require('debug')('strong-soap:server:detail'),
++  ElementDescriptor = require('./parser/xsd/descriptor').ElementDescriptor;
+ 
+ try {
+   compress = require('compress');
+@@ -28,6 +29,7 @@ class Server extends Base {
+     super(wsdl, options);
+     var self = this;
+     options = options || {};
++    this.objectFactory = options.objectFactory;
+     this.path = path;
+     this.services = services;
+ 
+@@ -134,23 +136,9 @@ class Server extends Base {
+   _process(input, req, callback) {
+     var self = this,
+       pathname = url.parse(req.url).pathname.replace(/\/$/, ''),
+-      obj = this.xmlHandler.xmlToJson(null, input),
+-      body = obj.Body,
+-      headers = obj.Header,
+       bindings = this.wsdl.definitions.bindings, binding,
+       operation, operationName,
+-      serviceName, portName,
+-      includeTimestamp = obj.Header && obj.Header.Security &&
+-        obj.Header.Security.Timestamp;
+-
+-    if (typeof self.authenticate === 'function') {
+-      if (!obj.Header || !obj.Header.Security) {
+-        throw new Error(g.f('No security header'));
+-      }
+-      if (!self.authenticate(obj.Header.Security)) {
+-        throw new Error(g.f('Invalid username or password'));
+-      }
+-    }
++      serviceName, portName;
+ 
+     if (typeof self.log === 'function') {
+       self.log('info', 'Attempting to bind to ' + pathname);
+@@ -189,6 +177,24 @@ class Server extends Base {
+     if (!binding) {
+       throw new Error(g.f('Failed to bind to {{WSDL}}'));
+     }
++    var obj = this.xmlHandler.xmlToJson(null, input, null, binding, self.wsdl.definitions, this.objectFactory);
++    if (!obj || !obj.Body) {
++      callback('Missing SOAP body content', 400);
++      return;
++    }
++    var body = obj.Body,
++    headers = obj.Header;
++    var includeTimestamp = obj.Header && obj.Header.Security &&
++        obj.Header.Security.Timestamp;
++
++    if (typeof self.authenticate === 'function') {
++      if (!obj.Header || !obj.Header.Security) {
++        throw new Error(g.f('No security header'));
++      }
++      if (!self.authenticate(obj.Header.Security)) {
++        throw new Error(g.f('Invalid username or password'));
++      }
++    }
+ 
+     try {
+       if (binding.style === 'rpc') {
+@@ -230,7 +236,7 @@ class Server extends Base {
+             break;
+           }
+         }
+-
++        operationName = operationName || messageElemName;
+         self.emit('request', obj, operationName);
+         if (headers)
+           self.emit('headers', headers, operationName);
+@@ -265,8 +271,7 @@ class Server extends Base {
+       outputName = options.outputName,
+       args = options.args,
+       style = options.style,
+-      includeTimestamp = options.includeTimestamp,
+-      handled = false;
++      includeTimestamp = options.includeTimestamp;
+ 
+     try {
+       operation = this.services[serviceName][portName][operationName];
+@@ -275,13 +280,11 @@ class Server extends Base {
+       debug('Server executeMethod: error: %s ', error.message);
+       //fix - should create a fault and call sendError (..) so that this error is not lost and will be sent as Fault in soap envelope
+       //to the client?
+-      return callback(this._envelope('', includeTimestamp));
++      //   return callback(this._envelope('', includeTimestamp));
++      throw error;
+     }
+ 
+-    function handleResult(error, result) {
+-      if (handled)
+-        return;
+-      handled = true;
++    function handleResult(error, result, streaming) {
+ 
+       var operation  = self.wsdl.definitions.services[serviceName]
+         .ports[portName].binding.operations[operationName];
+@@ -301,6 +304,10 @@ class Server extends Base {
+       debugDetail('Server handleResult. operationDescriptor: %j ', operationDescriptor);
+ 
+       var outputBodyDescriptor = operationDescriptor.output.body;
++      if (!(outputBodyDescriptor instanceof ElementDescriptor) && outputBodyDescriptor.elements && outputBodyDescriptor.elements.length === 1) {
++        // in case type descriptor, extract element descriptor
++        outputBodyDescriptor = outputBodyDescriptor.elements[0];
++      }
+       debugDetail('Server handleResult. outputBodyDescriptor: %j ', outputBodyDescriptor);
+ 
+       var soapNsURI = 'http://schemas.xmlsoap.org/soap/envelope/';
+@@ -318,20 +325,20 @@ class Server extends Base {
+ 
+       self.xmlHandler.jsonToXml(envelope.body, nsContext, outputBodyDescriptor, result);
+ 
+-      self._envelope(envelope, includeTimestamp);
+-      var message = envelope.body.toString({pretty: true});
+-      var xml = envelope.doc.end({pretty: true});
++      self._envelope(envelope, includeTimestamp, nsContext);
++    //   var message = envelope.body.toString({pretty: true});
++      var xml = envelope.doc.end({pretty: false});
+ 
+       debug('Server handleResult. xml: %s ', xml);
+-      callback(xml);
++      callback(xml, 200, streaming);
+ 
+     }
+ 
+     if (!self.wsdl.definitions.services[serviceName].ports[portName]
+         .binding.operations[operationName].output) {
+       // no output defined = one-way operation so return empty response
+-      handled = true;
+       callback('');
++      return;
+     }
+ 
+     var result = operation(args, handleResult, options.headers, req);
+@@ -363,7 +370,7 @@ class Server extends Base {
+ 
+   }
+ 
+-  _envelope(env, includeTimestamp) {
++  _envelope(env, includeTimestamp, nsContext) {
+     env = env || XMLHandler.createSOAPEnvelope();
+ 
+     if (includeTimestamp) {
+@@ -372,7 +379,11 @@ class Server extends Base {
+ 
+     var soapHeaderElement = env.header;
+     //add soapHeaders to envelope. Header can be xml, or JSON object which may or may not be described in WSDL/XSD.
+-    this.addSoapHeadersToEnvelope(soapHeaderElement, this.xmlHandler);
++    this.addSoapHeadersToEnvelope(soapHeaderElement, this.xmlHandler, nsContext);
++
++    for (var key of Object.keys(nsContext.currentScope.namespaces)) {
++        env.doc.attribute('xmlns:' + key, nsContext.currentScope.namespaces[key].uri);
++    }
+     return env;
+   };
+ 
+@@ -383,7 +394,8 @@ class Server extends Base {
+     var statusCode;
+     if (error.Fault.statusCode) {
+       statusCode = error.Fault.statusCode;
+-      error.Fault.statusCode = undefined;
++    //   error.Fault.statusCode = undefined;
++      delete error.Fault.statusCode;
+     }
+ 
+     var operationDescriptor = operation.describe(this.wsdl.definitions);
+@@ -416,9 +428,9 @@ class Server extends Base {
+     //serialize Fault object into XML as per faultDescriptor
+     this.xmlHandler.jsonToXml(envelope.body, nsContext, faultDescriptor, error.Fault);
+ 
+-    self._envelope(envelope, includeTimestamp);
+-    var message = envelope.body.toString({pretty: true});
+-    var xml = envelope.doc.end({pretty: true});
++    self._envelope(envelope, includeTimestamp, nsContext);
++    // var message = envelope.body.toString({pretty: true});
++    var xml = envelope.doc.end({pretty: false});
+ 
+     debug('Server sendError. Response envelope: %s ', xml);
+     callback(xml, statusCode);

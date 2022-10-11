@@ -1,0 +1,994 @@
+{
+	"info": {
+		"_postman_id": "cdc83f87-85ab-4397-834f-017e423ddb86",
+		"name": "ews calendar tests",
+		"description": "Test specific to EWS operations for with calendar data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Delegated calendar tests",
+			"item": [
+				{
+					"name": "GetFolder - get delegator calendar EWS Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+									"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+									"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+									"",
+									"pm.test(\"Get the folder id for the calendar folder\", function () {",
+									"    pm.expect(soapGetFolderResponseMessage.$.ResponseClass).to.be.equal(\"Success\");",
+									"    const code = soapGetFolderResponseMessage[\"m:ResponseCode\"];",
+									"    pm.expect(code).to.be.equal(\"NoError\");",
+									"    const folderId = soapGetFolderResponseMessage[\"m:Folders\"][\"t:CalendarFolder\"][\"t:FolderId\"];",
+									"    pm.environment.set(\"calendarEWSId\", folderId.$.Id);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//After adding the API delegation, replace it with real delegator email",
+									"pm.environment.set(\"delegatorEmail\", pm.environment.get(\"email\"));",
+									"",
+									"console.log(\"Get Delegated Calendar folder id calendar tests\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:DistinguishedFolderId Id=\"calendar\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Verify folder responses when BaseShape is IdOnly"
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem - create appointment in delegator calendar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"CreateItem for appointment\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.expect(pm.environment.has('calendarEWSId')).to.equal(true, \"calendarEWSId not set\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem SendMeetingInvitations=\"SendToNone\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{calendarEWSId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:CalendarItem>\n                    <t:Subject>Test Appointment</t:Subject>\n                    <t:Body BodyType=\"Text\">This test appointment has a location, travel time, and an alert</t:Body>\n                    <t:ReminderIsSet>true</t:ReminderIsSet>\n                    <t:ReminderMinutesBeforeStart>5</t:ReminderMinutesBeforeStart>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"ItemReminderAction\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>Audio</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"CalendarTimeZone\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>America/New_York</t:Value>\n                    </t:ExtendedProperty>\n                    <t:UID>A2AC73BD-7AE1-4F71-B1D3-C3F4623585BB</t:UID>\n                    <t:Start>2021-09-16T16:45:00</t:Start>\n                    <t:End>2021-09-16T17:45:00</t:End>\n                    <t:LegacyFreeBusyStatus>Busy</t:LegacyFreeBusyStatus>\n                    <t:Location>200 Regency Woods Pl\nCary, NC, United States</t:Location>\n                    <t:MeetingTimeZone TimeZoneName=\"Eastern Standard Time\"></t:MeetingTimeZone>\n                </t:CalendarItem>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetItem - retrieve appointment from delegator calendar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.equal(pm.environment.get(\"itemId\"));",
+									"",
+									"    const itemChangeKey = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:ItemId\"][\"$\"][\"ChangeKey\"];",
+									"    pm.expect(itemChangeKey).to.equal(pm.environment.get(\"itemChangeKey\"));",
+									"",
+									"    const ParentFolderId = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(ParentFolderId).to.equal(pm.environment.get(\"calendarEWSId\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:IncludeMimeContent>false</t:IncludeMimeContent>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"calendar:UID\"/>\n                    <t:FieldURI FieldURI=\"calendar:MeetingTimeZone\"/>\n                    <t:ExtendedFieldURI PropertyName=\"TravelTime\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                </t:AdditionalProperties>\n            </m:ItemShape>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </m:ItemIds>\n        </m:GetItem>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderItems for delegator calendar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+									"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"const soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+									"",
+									"pm.test(\"Verify response\", function () {",
+									"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"    pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"SyncFolderItems for Calendar\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:FolderId Id=\"{{calendarEWSId}}\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>1000</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "This test cleans-up the undeliverable email notices from the user's inbox"
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteItem - delete appointment from delegator calendar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"calendarEWSId\");",
+									"    pm.environment.unset(\"delegatorEmail\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Get Calendar folder id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"var soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"var soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Get the folder id for the calendar folder\", function () {",
+							"    pm.expect(soapGetFolderResponseMessage.$.ResponseClass).to.be.equal(\"Success\");",
+							"    var code = soapGetFolderResponseMessage[\"m:ResponseCode\"];",
+							"    pm.expect(code).to.be.equal(\"NoError\");",
+							"    var folderId = soapGetFolderResponseMessage[\"m:Folders\"][\"t:CalendarFolder\"][\"t:FolderId\"];",
+							"    pm.environment.set(\"CALENDAR_FOLDER_ID\", folderId.$.Id);",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:DistinguishedFolderId Id=\"calendar\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder responses when BaseShape is IdOnly"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateItem for Calendar appointment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"CreateItem for appointment\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    var jsonObject = xml2Json(responseBody);",
+							"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody)",
+							"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+							"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.expect(pm.environment.has('CALENDAR_FOLDER_ID')).to.equal(true, \"CALENDAR_FOLDER_ID is not set\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem SendMeetingInvitations=\"SendToNone\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{CALENDAR_FOLDER_ID}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:CalendarItem>\n                    <t:Subject>Test Appointment</t:Subject>\n                    <t:Body BodyType=\"Text\">This test appointment has a location, travel time, and an alert</t:Body>\n                    <t:ReminderIsSet>true</t:ReminderIsSet>\n                    <t:ReminderMinutesBeforeStart>5</t:ReminderMinutesBeforeStart>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"ItemReminderAction\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>Audio</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"ItemReminderSound\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>Chord</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"CalendarTimeZone\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>America/New_York</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"TravelTime\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>1620.000000</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"StartLocation\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>YnBsaXN0MDDUAQIDBAUGIyRYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKQHCBscVSRudWxs2QkKCwwNDg8QERITExMTExgZGlZyYWRpdXNbZGlzcGxheU5hbWVXYWRkcmVzc1xtYXBLaXRIYW5kbGVbYWJVUkxTdHJpbmdVdGl0bGVWJGNsYXNzVHR5cGVZcm91dGVUeXBlIwAAAAAAAAAAgACAAIAAgACAAIADEACAAlNDQVLSHR4fIFokY2xhc3NuYW1lWCRjbGFzc2VzW0NhbExvY2F0aW9uoiEiW0NhbExvY2F0aW9uWE5TT2JqZWN0XxAPTlNLZXllZEFyY2hpdmVy0SUmVHJvb3SAAQAIABEAGgAjAC0AMgA3ADwAQgBVAFwAaABwAH0AiQCPAJYAmwClAK4AsACyALQAtgC4ALoAvAC+AMIAxwDSANsA5wDqAPYA/wERARQBGQAAAAAAAAIBAAAAAAAAACcAAAAAAAAAAAAAAAAAAAEb</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"StructuredLocation\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                        <t:Value>YnBsaXN0MDDUAQIDBAUGKSpYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKQHCCEiVSRudWxs3AkKCwwNDg8QERITFBUWFRgZGhscFR4VFVthYlVSTFN0cmluZ1ZyYWRpdXNZcm91dGVUeXBlWWxvbmdpdHVkZVhsYXRpdHVkZVR0eXBlVXRpdGxlViRjbGFzc1dhZGRyZXNzXxAQaGFzVmFsaWRMb2NhdGlvblxtYXBLaXRIYW5kbGVbZGlzcGxheU5hbWWAACNAaCEZEbIRtYAAI8BTstQXQ+lkI0BB3PVVghKUEACAAoADgAAJgACAAF8QLDIwMCBSZWdlbmN5IFdvb2RzIFBsCkNhcnksIE5DLCBVbml0ZWQgU3RhdGVz0iMkJSZaJGNsYXNzbmFtZVgkY2xhc3Nlc1tDYWxMb2NhdGlvbqInKFtDYWxMb2NhdGlvblhOU09iamVjdF8QD05TS2V5ZWRBcmNoaXZlctErLFRyb290gAEACAARABoAIwAtADIANwA8AEIAWwBnAG4AeACCAIsAkACWAJ0ApQC4AMUA0QDTANwA3gDnAPAA8gD0APYA+AD5APsA/QEsATEBPAFFAVEBVAFgAWkBewF+AYMAAAAAAAACAQAAAAAAAAAtAAAAAAAAAAAAAAAAAAABhQ==</t:Value>\n                    </t:ExtendedProperty>\n                    <t:UID>A2AC73BD-7AE1-4F71-B1D3-C3F4623585BB</t:UID>\n                    <t:Start>2020-09-16T16:45:00</t:Start>\n                    <t:End>2020-09-16T17:45:00</t:End>\n                    <t:LegacyFreeBusyStatus>Busy</t:LegacyFreeBusyStatus>\n                    <t:Location>200 Regency Woods Pl\nCary, NC, United States</t:Location>\n                    <t:MeetingTimeZone TimeZoneName=\"Eastern Standard Time\"></t:MeetingTimeZone>\n                </t:CalendarItem>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Calendar appointment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"GetItem for appointment\");",
+							"    pm.response.to.be.ok;",
+							"    var jsonObject = xml2Json(responseBody);",
+							"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    console.log(\"GetItem responseMessage\");",
+							"    console.log(responseMessage);",
+							"",
+							"    console.log(\"eql\" + responseMessage[\"m:ResponseCode\"]);",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    var itemSubject = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.be.undefined;",
+							"",
+							"    var itemUID = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:UID\"];",
+							"    pm.expect(itemUID).to.equal(\"A2AC73BD-7AE1-4F71-B1D3-C3F4623585BB\");",
+							"",
+							"    var itemTZ = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:MeetingTimeZone\"][\"$\"][\"TimeZoneName\"];",
+							"    pm.expect(itemTZ).to.equal(\"Eastern Standard Time\");",
+							"",
+							"    var extendedFieldURI = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:ExtendedProperty\"][\"t:ExtendedFieldURI\"][\"$\"];",
+							"    pm.expect(extendedFieldURI).to.be.an('object').that.has.all.keys('PropertyName', 'PropertySetId', 'PropertyType')",
+							"    var itemPropName = extendedFieldURI[\"PropertyName\"];",
+							"    pm.expect(itemPropName).to.equal(\"TravelTime\");",
+							"    var itemPropId = extendedFieldURI[\"PropertySetId\"];",
+							"    pm.expect(itemPropId).to.equal(\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\");",
+							"    var itemPropType = extendedFieldURI[\"PropertyType\"];",
+							"    pm.expect(itemPropType).to.equal(\"String\");",
+							"    var itemValue = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:ExtendedProperty\"][\"t:Value\"];",
+							"    pm.expect(itemValue).to.equal(\"1620.000000\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:IncludeMimeContent>false</t:IncludeMimeContent>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"calendar:UID\"/>\n                    <t:FieldURI FieldURI=\"calendar:MeetingTimeZone\"/>\n                    <t:ExtendedFieldURI PropertyName=\"TravelTime\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                </t:AdditionalProperties>\n            </m:ItemShape>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </m:ItemIds>\n        </m:GetItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteItem for Calendar appointment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"DeleteItem for appointment\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    var jsonObject = xml2Json(responseBody);",
+							"    console.log(jsonObject);",
+							"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    pm.environment.unset(\"itemId\");",
+							"    pm.environment.unset(\"itemChangeKey\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateItem for Calendar meeting",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"CreateItem for meeting\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody)",
+							"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+							"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// pm.expect(pm.environment.has('CALENDAR_FOLDER_ID')).to.equal(true, \"CALENDAR_FOLDER_ID is not set\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"V2016_04_13\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <CreateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" MessageDisposition=\"SaveOnly\" SendMeetingInvitations=\"SendToNone\">\n            <SavedItemFolderId>\n                <t:FolderId Id=\"{{CALENDAR_FOLDER_ID}}\"/>\n            </SavedItemFolderId>\n            <Items>\n                <t:CalendarItem>\n                    <t:Subject>Christmas Dinner</t:Subject>\n                    <t:Sensitivity>Normal</t:Sensitivity>\n                    <t:Body BodyType=\"HTML\">&lt;html\n                        xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                        xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                        xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                        xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;Dinner&lt;o:p&gt;&lt;br&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                    </t:Body>\n                    <t:Importance>Normal</t:Importance>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34144\" PropertyType=\"SystemTime\"/>\n                        <t:Value>2021-12-25T21:45:00Z</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34050\" PropertyType=\"SystemTime\"/>\n                        <t:Value>2021-12-25T22:00:00Z</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                        <t:Value>true</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34049\" PropertyType=\"Integer\"/>\n                        <t:Value>15</t:Value>\n                    </t:ExtendedProperty>\n                    <t:MentionsEx></t:MentionsEx>\n                    <t:UID>92BAAC27-FFFE-484E-9600-0BA2DDD87329</t:UID>\n                    <t:Start>2021-12-25T19:00:00.000Z</t:Start>\n                    <t:End>2021-12-25T19:30:00.000Z</t:End>\n                    <t:IsAllDayEvent>false</t:IsAllDayEvent>\n                    <t:LegacyFreeBusyStatus>Busy</t:LegacyFreeBusyStatus>\n                    <t:Location>North Pole</t:Location>\n                    <t:IsResponseRequested>true</t:IsResponseRequested>\n                    <t:RequiredAttendees>\n                        <t:Attendee>\n                            <t:Mailbox>\n                                <t:EmailAddress>bert.muppet@mail.quattro.rocks</t:EmailAddress>\n                            </t:Mailbox>\n                            <t:ResponseType>NoResponseReceived</t:ResponseType>\n                        </t:Attendee>\n                    </t:RequiredAttendees>\n                    <t:StartTimeZone Id=\"Eastern Standard Time\"></t:StartTimeZone>\n                    <t:EndTimeZone Id=\"Eastern Standard Time\"></t:EndTimeZone>\n                    <t:AllowNewTimeProposal>true</t:AllowNewTimeProposal>\n                </t:CalendarItem>\n            </Items>\n        </CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Calendar meeting after create",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"GetItem for meeting\");",
+							"    pm.response.to.be.ok;",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const itemSubject = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.equal(\"Christmas Dinner\");",
+							"",
+							"    const itemUID = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:UID\"];",
+							"    pm.expect(itemUID).to.equal(\"92BAAC27-FFFE-484E-9600-0BA2DDD87329\");",
+							"",
+							"    // Verify location",
+							"    const location = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Location\"];",
+							"    pm.expect(location).to.equal(\"North Pole\");",
+							"",
+							"    console.log(responseMessage);",
+							"",
+							"    // Check attendee",
+							"    const attendeeName = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:RequiredAttendees\"][\"t:Attendee\"][0][\"t:Mailbox\"][\"t:Name\"];",
+							"    pm.expect(attendeeName).to.equal(\"bert.muppet@mail.quattro.rocks\");",
+							"",
+							"    const attendeeEmail = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:RequiredAttendees\"][\"t:Attendee\"][0][\"t:Mailbox\"][\"t:EmailAddress\"];",
+							"    pm.expect(attendeeEmail).to.equal(\"bert.muppet@mail.quattro.rocks\");",
+							"",
+							"    // Check organizer",
+							"    let emailAddress = pm.environment.get(\"email\");",
+							"    let domainStart = emailAddress.indexOf('@');",
+							"    const expectedEmailId = emailAddress.substring(0, domainStart);",
+							"    const organizerName = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Organizer\"][\"t:Mailbox\"][\"t:Name\"];",
+							"    emailAddress = organizerName;",
+							"    domainStart = emailAddress.indexOf('@');",
+							"    pm.expect(emailAddress.substring(0, domainStart)).to.equal(expectedEmailId);",
+							"",
+							"    const organizerEmail = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Organizer\"][\"t:Mailbox\"][\"t:EmailAddress\"];",
+							"    emailAddress = organizerEmail;",
+							"    domainStart = emailAddress.indexOf('@');",
+							"    pm.expect(emailAddress.substring(0, domainStart)).to.equal(expectedEmailId);",
+							"",
+							"    // Check Start/End times",
+							"    const start = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Start\"];",
+							"    pm.expect(new Date(start) - new Date(\"2021-12-25T19:00:00.000Z\")).to.equal(0, `Start time ${start} is incorrect`);",
+							"",
+							"    const end = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:End\"];",
+							"    pm.expect(new Date(end) - new Date(\"2021-12-25T19:30:00.000Z\")).to.equal(0, `End time ${end} is incorrect`);",
+							"",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemShape>\n                <t:BaseShape>AllProperties</t:BaseShape>\n                <t:IncludeMimeContent>false</t:IncludeMimeContent>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"calendar:UID\"/>\n                    <t:FieldURI FieldURI=\"calendar:MeetingTimeZone\"/>\n                    <t:ExtendedFieldURI PropertyName=\"TravelTime\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                </t:AdditionalProperties>\n            </m:ItemShape>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </m:ItemIds>\n        </m:GetItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateItem for Calendar meeting",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"CreateItem for meeting\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody)",
+							"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+							"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.expect(pm.environment.has('CALENDAR_FOLDER_ID')).to.equal(true, \"CALENDAR_FOLDER_ID is not set\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateItem ConflictResolution=\"AlwaysOverwrite\" SendMeetingInvitationsOrCancellations=\"SendToAllAndSaveCopy\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{CALENDAR_FOLDER_ID}}\"/>\n            </m:SavedItemFolderId>\n            <m:ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"ck-{{itemId}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"calendar:End\"/>\n                            <t:CalendarItem>\n                                <t:End>2021-12-25T15:30:00</t:End>\n                            </t:CalendarItem>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"calendar:Start\"/>\n                            <t:CalendarItem>\n                                <t:Start>2021-12-25T15:00:00</t:Start>\n                            </t:CalendarItem>\n                        </t:SetItemField>\n                        <t:SetItemField>\n\t\t\t\t\t\t\t<t:FieldURI FieldURI=\"calendar:MeetingTimeZone\" />\n\t\t\t\t\t\t\t<t:CalendarItem>\n\t\t\t\t\t\t\t\t<t:MeetingTimeZone TimeZoneName=\"Eastern Standard Time\" />\n\t\t\t\t\t\t\t</t:CalendarItem>\n\t\t\t\t\t\t</t:SetItemField>\n                        <t:SetItemField>\n\t\t\t\t\t\t\t<t:ExtendedFieldURI PropertyName=\"CalendarTimeZone\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\" />\n\t\t\t\t\t\t\t<t:CalendarItem>\n\t\t\t\t\t\t\t\t<t:ExtendedProperty>\n\t\t\t\t\t\t\t\t\t<t:ExtendedFieldURI PropertyName=\"CalendarTimeZone\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\" />\n\t\t\t\t\t\t\t\t\t<t:Value>America/New_York</t:Value>\n\t\t\t\t\t\t\t\t</t:ExtendedProperty>\n\t\t\t\t\t\t\t</t:CalendarItem>\n\t\t\t\t\t\t</t:SetItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </m:ItemChanges>\n        </m:UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Calendar meeting after update",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"GetItem for meeting\");",
+							"    pm.response.to.be.ok;",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const itemSubject = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.equal(\"Christmas Dinner\");",
+							"",
+							"    const itemUID = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:UID\"];",
+							"    pm.expect(itemUID).to.equal(\"92BAAC27-FFFE-484E-9600-0BA2DDD87329\");",
+							"",
+							"    // Verify location",
+							"    const location = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Location\"];",
+							"    pm.expect(location).to.equal(\"North Pole\");",
+							"",
+							"    // Check attendee",
+							"    const attendeeName = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:RequiredAttendees\"][\"t:Attendee\"][0][\"t:Mailbox\"][\"t:Name\"];",
+							"    pm.expect(attendeeName).to.equal(\"bert.muppet@mail.quattro.rocks\");",
+							"",
+							"    const attendeeEmail = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:RequiredAttendees\"][\"t:Attendee\"][0][\"t:Mailbox\"][\"t:EmailAddress\"];",
+							"    pm.expect(attendeeEmail).to.equal(\"bert.muppet@mail.quattro.rocks\");",
+							"",
+							"    // Check organizer",
+							"    let emailAddress = pm.environment.get(\"email\");",
+							"    let domainStart = emailAddress.indexOf('@');",
+							"    const expectedEmailId = emailAddress.substring(0, domainStart);",
+							"    const organizerName = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Organizer\"][\"t:Mailbox\"][\"t:Name\"];",
+							"    emailAddress = organizerName;",
+							"    domainStart = emailAddress.indexOf('@');",
+							"    pm.expect(emailAddress.substring(0, domainStart)).to.equal(expectedEmailId);",
+							"",
+							"    const organizerEmail = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Organizer\"][\"t:Mailbox\"][\"t:EmailAddress\"];",
+							"    emailAddress = organizerEmail;",
+							"    domainStart = emailAddress.indexOf('@');",
+							"    pm.expect(emailAddress.substring(0, domainStart)).to.equal(expectedEmailId);",
+							"",
+							"    // Check Start/End times",
+							"    const start = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:Start\"];",
+							"    pm.expect(new Date(start) - new Date(\"2021-12-25T20:00:00.000Z\")).to.equal(0, `Start time ${start} is incorrect`);",
+							"",
+							"    const end = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:End\"];",
+							"    pm.expect(new Date(end) - new Date(\"2021-12-25T20:30:00.000Z\")).to.equal(0, `End time ${end} is incorrect`);",
+							"",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemShape>\n                <t:BaseShape>AllProperties</t:BaseShape>\n                <t:IncludeMimeContent>false</t:IncludeMimeContent>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"calendar:UID\"/>\n                    <t:FieldURI FieldURI=\"calendar:MeetingTimeZone\"/>\n                    <t:ExtendedFieldURI PropertyName=\"TravelTime\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                </t:AdditionalProperties>\n            </m:ItemShape>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </m:ItemIds>\n        </m:GetItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cancel Calendar meeting",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"Cancel Calendar meeting\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    console.log(jsonObject);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const itemId = responseMessage[\"m:Items\"][\"t:CalendarItem\"][\"t:ItemId\"];",
+							"    pm.expect(itemId.$.Id).to.equal(pm.environment.get(\"itemId\"));",
+							"    pm.expect(itemId.$.ChangeKey).to.equal(pm.environment.get(\"itemChangeKey\"));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <CreateItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" MessageDisposition=\"SendAndSaveCopy\" SendMeetingInvitations=\"SendToAllAndSaveCopy\">\n\t\t\t<Items>\n\t\t\t\t<t:CancelCalendarItem>\n\t\t\t\t\t<t:ReferenceItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n\t\t\t\t\t<t:NewBodyContent BodyType=\"HTML\">&lt;html xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot; xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot; xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot; xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n\t\t\t\t\t\t/* Font Definitions */ @font-face\n\t\t\t\t\t\t{font-family:&quot;Cambria Math&quot;;\n\t\t\t\t\t\tpanose-1:2 4 5 3 5 4 6 3 2 4;} @font-face\n\t\t\t\t\t\t{font-family:Calibri; panose-1:2 15 5 2 2 2 4 3 2 4;}\n\t\t\t\t\t\t/* Style Definitions */ p.MsoNormal, li.MsoNormal, div.MsoNormal\n\t\t\t\t\t\t{margin:0in; font-size:11.0pt;\n\t\t\t\t\t\tfont-family:&quot;Calibri&quot;,sans-serif;}\n\t\t\t\t\t\tspan.EmailStyle17 {mso-style-type:personal-compose;\n\t\t\t\t\t\tfont-family:&quot;Calibri&quot;,sans-serif;\n\t\t\t\t\t\tcolor:windowtext;} .MsoChpDefault\n\t\t\t\t\t\t{mso-style-type:export-only; font-family:&quot;Calibri&quot;,sans-serif;}\n\t\t\t\t\t\t@page WordSection1 {size:8.5in 11.0in;\n\t\t\t\t\t\tmargin:1.0in 1.0in 1.0in 1.0in;} div.WordSection1\n\t\t\t\t\t\t{page:WordSection1;} --&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;This is a test&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</t:NewBodyContent>\n\t\t\t\t</t:CancelCalendarItem>\n\t\t\t</Items>\n\t\t</CreateItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteItem for Calendar meeting",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"DeleteItem for meeting\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    console.log(jsonObject);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    pm.environment.unset(\"itemId\");",
+							"    pm.environment.unset(\"itemChangeKey\");",
+							"    pm.environment.unset(\"CALENDAR_FOLDER_ID\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

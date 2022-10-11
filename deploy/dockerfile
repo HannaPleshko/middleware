@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:experimental
+
+# FROM node:12-alpine
+FROM node:12
+
+# A build number that is shown in the EWS service homepage
+ARG BUILD_NUMBER
+
+# Headers
+LABEL DominoDocker.maintainer="rusty.godwin@hcl.com, david.kennedy@hcl.com"
+
+# Create install directory
+WORKDIR /opt/hcl/ews
+
+# Create a user and make it owner of the ews directory
+# Following in this file, the user is ews and the group is root.  This is needed to run on 
+# OpenShift 4 and above where root access is restricted.  It is done to avoid the permission denied
+# case when creating the logs directory at runtime.  
+# See this article: https://stackoverflow.com/questions/42363105/permission-denied-mkdir-in-container-on-openshift
+# RUN adduser -S ews
+RUN useradd -m ews
+
+# Copy source
+COPY --chown=ews:root . .
+
+# Install app dependencies
+#RUN npm install
+RUN --mount=type=secret,id=npmrcpat,dst=/root/.npmrc npm install --unsafe-perm
+
+RUN chmod -R 775 /opt/hcl/ews
+RUN chown -R ews:root /opt/hcl/ews
+USER ews:root
+
+# Update the build number in the EWS service root HTML file
+RUN echo Build: $BUILD_NUMBER
+RUN sed -i'.bak' -e "s/__build_number__/$BUILD_NUMBER/" html/index.html
+
+# Clean built code
+RUN npm run clean
+
+# Build typescript code
+RUN npm run build
+
+# remove development dependencies
+# RUN npm prune --production
+
+# Expose port
+EXPOSE 3000
+
+CMD [ "npm", "start" ]

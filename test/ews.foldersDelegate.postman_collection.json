@@ -1,0 +1,1124 @@
+{
+	"info": {
+		"_postman_id": "45e14ac5-c209-4ab0-b70a-a67bc60bbe3a",
+		"name": "ews Folders delegate",
+		"description": "Tests for folder EWS operations. Use with the ews environment.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GetFolder - get delegator root EWS Id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"",
+							"const successString = \"Success\";",
+							"const property = \"t:FolderId\";",
+							"",
+							" pm.test(\"Test for root folder. Should return EWS Id for root folder.\", function () {",
+							"    const soapString = JSON.stringify(soapGetFolderResponseMessage);",
+							"    pm.expect(soapString).to.include(successString);",
+							"    ",
+							"    pm.expect(soapString).to.include(property);",
+							"",
+							"    const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+							"    const folder = folders[\"t:Folder\"];",
+							"    pm.environment.set(\"rootEWSId\", folder[\"t:FolderId\"].$.Id);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"//After adding the API delegation, replace it with real delegator email",
+							"pm.environment.set(\"delegatorEmail\", pm.environment.get(\"email\"));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:DistinguishedFolderId Id=\"msgfolderroot\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder responses when BaseShape is Default."
+			},
+			"response": []
+		},
+		{
+			"name": "FindFolder - find delegator root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"pm.test(\"Verify success for request\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"NoError\");",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapGetFolderResponse = soapBody[\"m:FindFolderResponse\"];",
+							"var soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"var soapGetFolderResponseMessage = soapResponseMessages[\"m:FindFolderResponseMessage\"];",
+							"var soapRootFolder = soapGetFolderResponseMessage[\"m:RootFolder\"];",
+							"var soapFolders = soapRootFolder[\"t:Folders\"];",
+							"",
+							"//childFolders contains the expected minimum number of different types of folder items returned",
+							"//\"inbox\" , \"drafts\", \"sentitems\", \"deleteitems\", \"junkmail\", \"notes\" will be returned as Folder type.",
+							"// \"Birthdays & Annivarsaries\" is a contact folder type",
+							"var childFolders = {\"t:Folder\": 6, \"t:CalendarFolder\": 1, \"t:ContactsFolder\": 2, \"t:TasksFolder\": 1};",
+							"",
+							"// properties contains an array of properties for returned folder classes",
+							"var properties = {",
+							"    \"IPF.Note\":         [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\", \"t:UnreadCount\"], ",
+							"    \"IPF.StickyNote\":   [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\"], ",
+							"    \"IPF.Task\":         [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\"], ",
+							"    \"IPF.Appointment\":  [\"t:FolderId\", \"t:DisplayName\", \"t:ChildFolderCount\"], ",
+							"    \"IPF.Contact\":      [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\"]",
+							"};",
+							"",
+							"",
+							"pm.test(\"Get child folders for root folder when BaseShape is Default\", function () {",
+							"    for (const folderType in childFolders) {",
+							"        const expectedCount = childFolders[folderType];",
+							"        var folderList = soapFolders[folderType];",
+							"        if (!(folderList instanceof Array)) {",
+							"            folderList = [folderList]; ",
+							"        }",
+							"        if (folderList.length < expectedCount) {",
+							"            throw new Error(`Expected ${expectedCount} items for ${folderType}, but got ${folderList.length}: `)",
+							"        }",
+							"",
+							"        for (x = 0; x < folderList.length; x++)  {",
+							"            var soapFolderX = folderList[x];",
+							"            const folderClass = soapFolderX[\"t:FolderClass\"];",
+							"            const expectedProps = properties[folderClass]; ",
+							"            console.info(`Verifying ${JSON.stringify(soapFolderX)} has properties ${expectedProps}`);",
+							"            for (p = 0; p < expectedProps.length; p++) {",
+							"                pm.expect(soapFolderX).to.have.property(expectedProps[p]);",
+							"            }",
+							"        }",
+							"    }",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"China Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <FindFolder Traversal=\"Deep\"\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:AdditionalProperties>\n                    <t:ExtendedFieldURI PropertyTag=\"0x670A\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x670b\" PropertyType=\"Integer\"/>\n                </t:AdditionalProperties>\n            </FolderShape>\n            <IndexedPageFolderView Offset=\"0\" BasePoint=\"Beginning\"/>\n            <ParentFolderIds>\n               <t:DistinguishedFolderId Id=\"msgfolderroot\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </ParentFolderIds>\n        </FindFolder>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify childFolder for root folder when BaseShape is Default."
+			},
+			"response": []
+		},
+		{
+			"name": "FindFolder - find delegator root by EWS Id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"pm.test(\"Verify success for request\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"NoError\");",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapGetFolderResponse = soapBody[\"m:FindFolderResponse\"];",
+							"var soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"var soapGetFolderResponseMessage = soapResponseMessages[\"m:FindFolderResponseMessage\"];",
+							"var soapRootFolder = soapGetFolderResponseMessage[\"m:RootFolder\"];",
+							"var soapFolders = soapRootFolder[\"t:Folders\"];",
+							"",
+							"//childFolders contains the expected minimum number of different types of folder items returned",
+							"//\"inbox\" , \"drafts\", \"sentitems\", \"deleteitems\", \"junkmail\", \"notes\" will be returned as Folder type.",
+							"// \"Birthdays & Annivarsaries\" is a contact folder type",
+							"var childFolders = {\"t:Folder\": 6, \"t:CalendarFolder\": 1, \"t:ContactsFolder\": 2, \"t:TasksFolder\": 1};",
+							"",
+							"// properties contains an array of properties for returned folder classes",
+							"var properties = {",
+							"    \"IPF.Note\":         [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\", \"t:UnreadCount\"], ",
+							"    \"IPF.StickyNote\":   [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\"], ",
+							"    \"IPF.Task\":         [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\"], ",
+							"    \"IPF.Appointment\":  [\"t:FolderId\", \"t:DisplayName\", \"t:ChildFolderCount\"], ",
+							"    \"IPF.Contact\":      [\"t:FolderId\", \"t:DisplayName\", \"t:TotalCount\", \"t:ChildFolderCount\"]",
+							"};",
+							"",
+							"",
+							"pm.test(\"Get child folders for root folder when BaseShape is Default\", function () {",
+							"    for (const folderType in childFolders) {",
+							"        const expectedCount = childFolders[folderType];",
+							"        var folderList = soapFolders[folderType];",
+							"        if (!(folderList instanceof Array)) {",
+							"            folderList = [folderList]; ",
+							"        }",
+							"        if (folderList.length < expectedCount) {",
+							"            throw new Error(`Expected ${expectedCount} items for ${folderType}, but got ${folderList.length}: `)",
+							"        }",
+							"",
+							"        for (x = 0; x < folderList.length; x++)  {",
+							"            var soapFolderX = folderList[x];",
+							"            const folderClass = soapFolderX[\"t:FolderClass\"];",
+							"            const expectedProps = properties[folderClass]; ",
+							"            console.info(`Verifying ${JSON.stringify(soapFolderX)} has properties ${expectedProps}`);",
+							"            for (p = 0; p < expectedProps.length; p++) {",
+							"                pm.expect(soapFolderX).to.have.property(expectedProps[p]);",
+							"            }",
+							"        }",
+							"    }",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"China Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <FindFolder Traversal=\"Deep\"\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:AdditionalProperties>\n                    <t:ExtendedFieldURI PropertyTag=\"0x670A\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x670b\" PropertyType=\"Integer\"/>\n                </t:AdditionalProperties>\n            </FolderShape>\n            <IndexedPageFolderView Offset=\"0\" BasePoint=\"Beginning\"/>\n            <ParentFolderIds>\n                <t:FolderId Id=\"{{rootEWSId}}\"/>\n            </ParentFolderIds>\n        </FindFolder>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify childFolder for root folder when BaseShape is Default."
+			},
+			"response": []
+		},
+		{
+			"name": "SyncFolderHierarchy for delegator root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"pm.test(\"Verify success for request\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"NoError\");",
+							"});",
+							"",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:SyncFolderHierarchyResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:SyncFolderHierarchyResponseMessage\"];",
+							"var soapChanges = soapResponseMessage[\"m:Changes\"];",
+							"var soapCreate = soapChanges[\"t:Create\"];",
+							"",
+							"pm.test(\"Verify number of creates returned\", function () {",
+							"    pm.expect(soapCreate.length).to.gte(10);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderHierarchy xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"folder:ParentFolderId\"/>\n                    <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n                    <t:FieldURI FieldURI=\"folder:FolderClass\"/>\n                    <t:FieldURI FieldURI=\"folder:ManagedFolderInformation\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x10F4\" PropertyType=\"Boolean\"/>\n                </t:AdditionalProperties>\n            </FolderShape>\n            <SyncFolderId>\n                <t:FolderId Id=\"{{rootEWSId}}\"/>\n            </SyncFolderId>\n    </SyncFolderHierarchy>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateFolderPath for delegator folders inside root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:CreateFolderPathResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:CreateFolderPathResponseMessage\"];",
+							"",
+							"pm.test(\"Verify created folders\", function () {",
+							"",
+							"    pm.expect(soapResponseMessage.length).to.eql(3);",
+							"    const expectedNames = [\"MyThirdLevelFolder\", \"MySecondLevelFolder\", \"MyFirstLevelFolder\" ];",
+							"    let expectedParent = undefined;",
+							"    for (const message of soapResponseMessage) {",
+							"        console.log(`Processing message: ${JSON.stringify(message)}`)",
+							"",
+							"        pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"        const folders = message[\"m:Folders\"];",
+							"        const folder = folders[\"t:Folder\"];",
+							"        pm.expect(folder).to.have.property(\"t:FolderId\");",
+							"        pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+							"        if (expectedParent) {",
+							"            pm.expect(folder[\"t:ParentFolderId\"].$.Id).to.eql(expectedParent);",
+							"        }",
+							"        expectedParent = folder[\"t:FolderId\"].$.Id; // Next folder will be sub-folder of this folder",
+							"        pm.expect(folder[\"t:DisplayName\"]).to.eql(expectedNames.pop());",
+							"",
+							"        // Save the folders created so they can be used by other Postman tests and be removed when all Postman tests complete.",
+							"        let ids = pm.environment.get(\"folderIds\");",
+							"        let names = pm.environment.get(\"folderNames\");",
+							"        if (ids === undefined) {",
+							"            ids = [];",
+							"        }",
+							"        if (names === undefined) {",
+							"            names = [];",
+							"        }",
+							"        ids.push(folder[\"t:FolderId\"].$.Id); ",
+							"        names.push(folder[\"t:DisplayName\"]);",
+							"        pm.environment.set(\"folderIds\", ids);",
+							"        pm.environment.set(\"folderNames\", names);  ",
+							"",
+							"    }",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Unset any variables created by this test in case of pervious failures. ",
+							"pm.environment.unset(\"folderIds\");",
+							"pm.environment.unset(\"folderNames\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2013\" />\n      <t:MailboxCulture>en-US</t:MailboxCulture>\n      <t:TimeZoneContext>\n         <t:TimeZoneDefinition Id=\"GMT Standard Time\"/>\n      </t:TimeZoneContext>\n   </soap:Header>\n   <soap:Body >\n      <m:CreateFolderPath>\n         <m:ParentFolderId>\n            <t:FolderId Id=\"{{rootEWSId}}\"/>\n         </m:ParentFolderId>\n         <m:RelativeFolderPath>\n            <t:Folder>\n               <t:DisplayName>MyFirstLevelFolder</t:DisplayName>\n            </t:Folder>\n            <t:Folder>\n               <t:DisplayName>MySecondLevelFolder</t:DisplayName>\n            </t:Folder>\n            <t:Folder>\n               <t:DisplayName>MyThirdLevelFolder</t:DisplayName>\n            </t:Folder>\n         </m:RelativeFolderPath>\n      </m:CreateFolderPath>\n   </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for CreateFolderPath",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"var soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"var soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Test correct number of folders returned\", function () {",
+							"    pm.expect(soapGetFolderResponseMessage.length).to.eql(3);",
+							"});",
+							"",
+							"pm.test(\"Verify folders created by CreateFolderPath.\", function () {",
+							"    let count = 0; ",
+							"    for (const message of soapGetFolderResponseMessage) {",
+							"        pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"        const folders = message[\"m:Folders\"];",
+							"        const folder = folders[\"t:Folder\"];",
+							"        pm.expect(folder[\"t:FolderId\"].$.Id).to.eql(pm.environment.get(\"folderIds\")[count]);",
+							"        pm.expect(folder[\"t:DisplayName\"]).to.eql(pm.environment.get(\"folderNames\")[count]);",
+							"        count = count + 1; ",
+							"    }",
+							"});",
+							"",
+							"pm.environment.unset(\"firstFolderId\");",
+							"pm.environment.unset(\"secondFolderId\");",
+							"pm.environment.unset(\"thirdFolderId\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"firstFolderId\", pm.environment.get(\"folderIds\")[0]);",
+							"pm.environment.set(\"secondFolderId\", pm.environment.get(\"folderIds\")[1]);",
+							"pm.environment.set(\"thirdFolderId\", pm.environment.get(\"folderIds\")[2]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{firstFolderId}}\"/>\n                <t:FolderId Id=\"{{secondFolderId}}\"/>\n                <t:FolderId Id=\"{{thirdFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder responses when BaseShape is Default."
+			},
+			"response": []
+		},
+		{
+			"name": "EmptyFolder - delete delegator folders",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:EmptyFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:EmptyFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify empty folder response\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"});",
+							"",
+							"pm.environment.unset(\"topFolderId\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"topFolderId\", pm.environment.get(\"folderIds\")[0]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n  <soap:Header>\n    <t:RequestServerVersion Version =\"Exchange2010_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n      <m:EmptyFolder DeleteType=\"HardDelete\" DeleteSubFolders=\"true\">\n        <m:FolderIds>\n          <t:FolderId Id=\"{{topFolderId}}\"/>\n        </m:FolderIds>\n      </m:EmptyFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for EmptyFolder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"var soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"var soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Test correct number of folders returned\", function () {",
+							"    pm.expect(soapGetFolderResponseMessage.length).to.eql(3);",
+							"});",
+							"",
+							"pm.test(\"Verify folders created by CreateFolderPath.\", function () {",
+							"    let count = 0; ",
+							"    for (const message of soapGetFolderResponseMessage) {",
+							"        if (count === 0) { // Base folder should not be deleted",
+							"            pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"            pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"            const folders = message[\"m:Folders\"];",
+							"            const folder = folders[\"t:Folder\"];",
+							"            pm.expect(folder[\"t:FolderId\"].$.Id).to.eql(pm.environment.get(\"folderIds\")[count]);",
+							"            pm.expect(folder[\"t:DisplayName\"]).to.eql(pm.environment.get(\"folderNames\")[count]);",
+							"        }",
+							"        else {",
+							"            // Folder should have been deleted",
+							"            pm.expect(message.$.ResponseClass).to.eql(\"Error\");",
+							"            pm.expect(message[\"m:ResponseCode\"]).to.eql(\"ErrorFolderNotFound\");",
+							"        }",
+							"        count = count + 1; ",
+							"    }",
+							"});",
+							"",
+							"pm.environment.unset(\"firstFolderId\");",
+							"pm.environment.unset(\"secondFolderId\");",
+							"pm.environment.unset(\"thirdFolderId\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"firstFolderId\", pm.environment.get(\"folderIds\")[0]);",
+							"pm.environment.set(\"secondFolderId\", pm.environment.get(\"folderIds\")[1]);",
+							"pm.environment.set(\"thirdFolderId\", pm.environment.get(\"folderIds\")[2]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{firstFolderId}}\"/>\n                <t:FolderId Id=\"{{secondFolderId}}\"/>\n                <t:FolderId Id=\"{{thirdFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify sub-folders deleted by EmptyFolder."
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteFolder from CreateFolderPath",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Delete folder response is correct\", function() {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"topFolderId\", pm.environment.get(\"folderIds\")[0]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        <t:FolderId Id=\"{{topFolderId}}\" />\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Delete the root folder created from CreateFolderPath test."
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder after DeleteFolder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"var soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"var soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Test correct number of folders returned\", function () {",
+							"    pm.expect(soapGetFolderResponseMessage.length).to.eql(3);",
+							"});",
+							"",
+							"pm.test(\"Verify folders created by CreateFolderPath.\", function () {",
+							"    for (const message of soapGetFolderResponseMessage) {",
+							"        // Folder should have been deleted",
+							"        pm.expect(message.$.ResponseClass).to.eql(\"Error\");",
+							"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"ErrorFolderNotFound\");",
+							"    }",
+							"});",
+							"",
+							"// We are done with these.",
+							"pm.environment.unset(\"folderIds\");",
+							"pm.environment.unset(\"folderNames\");",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"firstFolderId\", pm.environment.get(\"folderIds\")[0]);",
+							"pm.environment.set(\"secondFolderId\", pm.environment.get(\"folderIds\")[1]);",
+							"pm.environment.set(\"thirdFolderId\", pm.environment.get(\"folderIds\")[2]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{firstFolderId}}\"/>\n                <t:FolderId Id=\"{{secondFolderId}}\"/>\n                <t:FolderId Id=\"{{thirdFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder responses when BaseShape is Default."
+			},
+			"response": []
+		},
+		{
+			"name": "CreateFolder inside delegator root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:CreateFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:CreateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify created folders\", function () {",
+							"",
+							"    pm.expect(soapResponseMessage.length).to.eql(2);",
+							"    let parentFolderId = undefined; ",
+							"",
+							"    for (const message of soapResponseMessage) {",
+							"        console.info(`Processing message: ${JSON.stringify(message)}`)",
+							"",
+							"        pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"        const folders = message[\"m:Folders\"];",
+							"        const folder = folders[\"t:Folder\"];",
+							"        pm.expect(folder).to.have.property(\"t:FolderId\");",
+							"        pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+							"        if (parentFolderId) {",
+							"            pm.expect(folder[\"t:ParentFolderId\"].$.Id).to.eql(parentFolderId);",
+							"        }",
+							"        parentFolderId = folder[\"t:ParentFolderId\"].$.Id; // All folders created should have the same parent",
+							"        pm.expect(folder[\"t:DisplayName\"]).to.be.oneOf([\"Folder1\",\"Folder2\"]);",
+							"",
+							"        // Save the folders created so they can be used by other Postman tests and be removed when all Postman tests complete.",
+							"        let ids = pm.environment.get(\"folderIds\");",
+							"        let names = pm.environment.get(\"folderNames\");",
+							"        if (ids === undefined) {",
+							"            ids = [];",
+							"        }",
+							"        if (names === undefined) {",
+							"            names = [];",
+							"        }",
+							"        ids.push(folder[\"t:FolderId\"].$.Id); ",
+							"        names.push(folder[\"t:DisplayName\"]);",
+							"        pm.environment.set(\"folderIds\", ids);",
+							"        pm.environment.set(\"folderNames\", names);   ",
+							"",
+							"    }",
+							"",
+							"    console.log(`Saved folder ids created: ${pm.environment.get(\"folderIds\")}`);",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n      xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ParentFolderId>\n        <t:FolderId Id=\"{{rootEWSId}}\"/>\n      </ParentFolderId>\n      <Folders>\n        <t:Folder>\n          <t:DisplayName>Folder1</t:DisplayName>\n        </t:Folder>\n        <t:Folder>\n          <t:DisplayName>Folder2</t:DisplayName>\n        </t:Folder>\n      </Folders>\n    </CreateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "MoveFolder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:MoveFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:MoveFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify moved folders\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const folders = soapResponseMessage[\"m:Folders\"];",
+							"    const folder = folders[\"t:Folder\"];",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.eq(pm.environment.get(\"folderId1\"));",
+							"    pm.expect(folder[\"t:ParentFolderId\"].$.Id).to.eql(pm.environment.get(\"folderId0\"));",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.eql(pm.environment.get(\"folderNames\")[1]);",
+							"});",
+							"",
+							"pm.environment.unset(\"folderId0\");",
+							"pm.environment.unset(\"folderId1\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"folderId0\", pm.environment.get(\"folderIds\")[0]);",
+							"pm.environment.set(\"folderId1\", pm.environment.get(\"folderIds\")[1]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <MoveFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:FolderId Id=\"{{folderId0}}\"/>\n      </ToFolderId>\n      <FolderIds>\n        <t:FolderId Id=\"{{folderId1}}\"/>\n      </FolderIds>\n    </MoveFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Moves the 2nd folder created by CreateFolder test under the first folder. \nTODO: EWS does not actually perform the move yet."
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateFolder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:UpdateFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:UpdateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated folder\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const folders = soapResponseMessage[\"m:Folders\"];",
+							"    const folder = folders[\"t:Folder\"];",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.eql(pm.environment.get(\"folderIdToUpdate\")); // Should keep same folder id",
+							"    pm.expect(folder[\"t:FolderId\"].$.ChangeKey).to.not.eql(pm.environment.get(\"originalFolderChangeKey\"));",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.eql(pm.environment.get(\"newFolderName\"));",
+							"",
+							"    // Update the saved folder name.",
+							"    const names = pm.environment.get(\"folderNames\");",
+							"    names[1] = pm.environment.get(\"newFolderName\");",
+							"    pm.environment.set(\"folderNames\", names);",
+							"});",
+							"",
+							"pm.environment.unset(\"folderIdToUpdate\");",
+							"pm.environment.unset(\"originalFolderChangeKey\");",
+							"pm.environment.unset(\"newFolderName\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"folderIdToUpdate\", pm.environment.get(\"folderIds\")[1]);",
+							"pm.environment.set(\"originalFolderChangeKey\", \"THEORIGINAL\");",
+							"pm.environment.set(\"newFolderName\", \"Updated Folder1\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <UpdateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n      <FolderChanges>\n        <t:FolderChange>\n          <t:FolderId Id=\"{{folderIdToUpdate}}\" ChangeKey=\"{{originalFolderChangeKey}}\"/>\n          <t:Updates>\n            <t:SetFolderField>\n              <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n              <t:Folder>\n                <t:DisplayName>{{newFolderName}}</t:DisplayName>\n              </t:Folder>\n            </t:SetFolderField>\n          </t:Updates>\n        </t:FolderChange>\n      </FolderChanges>\n    </UpdateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Updates the 2nd folder created by CreateFolder test. Should be executed after the MoveFolder and CopyFolder test. \nTODO: EWS does not actually perform the update yet."
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteFolder from CreateFolder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Delete folder response is correct\", function() {",
+							"    for (const message of soapResponseMessage) {",
+							"        pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    }",
+							"});",
+							"",
+							"pm.environment.unset(\"folderIdsToDelete\");",
+							"pm.environment.unset(\"folderIds\");",
+							"pm.environment.unset(\"folderNames\");",
+							"pm.environment.unset(\"topFolderId\");",
+							"pm.environment.unset(\"firstFolderId\");",
+							"pm.environment.unset(\"secondFolderId\");",
+							"pm.environment.unset(\"thirdFolderId\");",
+							"pm.environment.unset(\"delegatorEmail\");",
+							"pm.environment.unset(\"rootEWSId\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let idString = \"\";",
+							"for (const id of pm.environment.get(\"folderIds\")) {",
+							"    idString = idString + `<t:FolderId Id=\"${id}\" />`;",
+							"}",
+							"pm.environment.set(\"folderIdsToDelete\", idString);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        {{folderIdsToDelete}}\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Delete the folders created from CreateFolder test."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

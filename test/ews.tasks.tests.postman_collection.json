@@ -1,0 +1,1420 @@
+{
+	"info": {
+		"_postman_id": "2c2638dc-13cc-45fe-91a8-451601885eec",
+		"name": "ews tasks tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Delegeted tasks tests",
+			"item": [
+				{
+					"name": "GetFolder - get delegator tasks EWS Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the folderId of the tasks folder to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody);",
+									"    const folderId = $('t\\\\:FolderId').attr('id');",
+									"    pm.environment.set('tasksEWSId', folderId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//After adding the API delegation, replace it with real delegator email",
+									"pm.environment.set(\"delegatorEmail\", pm.environment.get(\"email\"));",
+									"",
+									"console.log(\"GetFolder for delegator Task tests\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"tasks\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetFolder request in order to get the folderId of the tasks folder to be used when creating a task"
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem - create task in delegator tasks",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the newly created task's itemId and itemChangeKey to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    ",
+									"    const $ = cheerio.load(responseBody);",
+									"    pm.expect($('t\\\\:ParentFolderId').attr('id')).to.equal(pm.environment.get('tasksEWSId'));",
+									"",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'));",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateItem for delegator Task\");",
+									"",
+									"// Verify that the taskFolderId environment variable is set.",
+									"pm.expect(pm.environment.get(\"tasksEWSId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"V2016_04_13\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <CreateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" MessageDisposition=\"SaveOnly\">\n            <SavedItemFolderId>\n                <t:FolderId Id=\"{{tasksEWSId}}\"/>\n            </SavedItemFolderId>\n            <Items>\n                <t:Task>\n                    <t:Subject>Test Task</t:Subject>\n                    <t:Sensitivity>Normal</t:Sensitivity>\n                    <t:Body BodyType=\"HTML\">&lt;html\n                        xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                        xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                        xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                        xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;This is a test task&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                    </t:Body>\n                    <t:Importance>Normal</t:Importance>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:DueDate>2020-10-27T11:59:00Z</t:DueDate>\n                </t:Task>\n            </Items>\n        </CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS CreateItem request for creating a task"
+					},
+					"response": []
+				},
+				{
+					"name": "GetItem - retrieve task from delegator tasks",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the CreateItem call.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Task\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.equal(pm.environment.get(\"itemId\"));",
+									"    ",
+									"    const parentFolderId = responseMessage[\"m:Items\"][\"t:Task\"][\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get(\"tasksEWSId\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"GetItem for delegator Task\");",
+									"",
+									"// Verify that the itemId of the task is set in the enviroonment",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetItem request for fetching a task"
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateItem - update tasks in delegator tasks",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    // ItemId - Only ItemId is returned from an update operation.  We must verify the updates in another test using GET",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Task\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    const expectedItemId = pm.environment.get(\"itemId\");",
+									"    pm.expect(itemId).to.be.equal(expectedItemId);",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItem for Task\");",
+									"",
+									"// Verify that the itemId and itemChangeKey are set in the environment.",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');",
+									"",
+									"// Save the current date, to be used for the task completion date, to the environment",
+									"pm.environment.set(\"taskCompletion\", new Date().toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2013\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <UpdateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" ConflictResolution=\"AutoResolve\" MessageDisposition=\"SaveOnly\">\n            <ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Subject\"/>\n                            <t:Item>\n                                <t:Subject>Test #2</t:Subject>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Body\"/>\n                            <t:Item>\n                                <t:Body BodyType=\"HTML\">&lt;html\n                                    xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                                    xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                                    xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                                    xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;Adding a description and changing the due date to 10/8/21&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                                </t:Body>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Sensitivity\"/>\n                            <t:Item>\n                                <t:Sensitivity>Normal</t:Sensitivity>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Importance\"/>\n                            <t:Item>\n                                <t:Importance>Normal</t:Importance>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"task:DueDate\"/>\n                            <t:Task>\n                                <t:DueDate>2021-10-08T11:59:00Z</t:DueDate>\n                            </t:Task>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"task:CompleteDate\"/>\n                            <t:Task>\n                                <t:CompleteDate>{{taskCompletion}}</t:CompleteDate>\n                            </t:Task>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"task:Status\"/>\n                            <t:Task>\n                                <t:Status>Completed</t:Status>\n                            </t:Task>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                            <t:Item>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                                    <t:Value>false</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                            <t:Item>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                                    <t:Value>false</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:DeleteItemField>\n                            <t:FieldURI FieldURI=\"item:Categories\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:FieldURI FieldURI=\"task:Recurrence\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:FieldURI FieldURI=\"task:StartDate\"/>\n                        </t:DeleteItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </ItemChanges>\n        </UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS UpdatItem request for updating a task"
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderItems for delegator tasks",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+									"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"const soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+									"",
+									"pm.test(\"Verify response\", function () {",
+									"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"    pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"SyncFolderItems for delegator Task\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:FolderId Id=\"{{tasksEWSId}}\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>1000</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "This test cleans-up the undeliverable email notices from the user's inbox"
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteItem - delete task from delegator tasks",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"DeleteItem for delegator Task\");",
+									"",
+									"// Verify that the itemId is set in the environment.",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"DeleteItem\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    pm.environment.unset(\"delegatorEmail\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"tasksEWSId\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <DeleteItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" DeleteType=\"SoftDelete\" AffectedTaskOccurrences=\"AllOccurrences\">\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Test to exercise the EWS DeleteItem request to delete a task"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GetFolder for tasks folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the folderId of the tasks folder to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody);",
+							"    const folderId = $('t\\\\:FolderId').attr('id');",
+							"    pm.environment.set('tasksFolderId', $('t\\\\:FolderId').attr('id'));",
+							"    ",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for tasks folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"tasks\"></t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetFolder request in order to get the folderId of the tasks folder to be used when creating a task"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateItem for Task",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the newly created task's itemId and itemChangeKey to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody);",
+							"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'));",
+							"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateItem for Task\");",
+							"",
+							"// Verify that the taskFolderId environment variable is set.",
+							"pm.expect(pm.environment.get(\"tasksFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"V2016_04_13\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <CreateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" MessageDisposition=\"SaveOnly\">\n            <SavedItemFolderId>\n                <t:FolderId Id=\"{{tasksFolderId}}\"/>\n            </SavedItemFolderId>\n            <Items>\n                <t:Task>\n                    <t:Subject>Test Task</t:Subject>\n                    <t:Sensitivity>Normal</t:Sensitivity>\n                    <t:Body BodyType=\"HTML\">&lt;html\n                        xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                        xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                        xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                        xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;This is a test task&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                    </t:Body>\n                    <t:Importance>Normal</t:Importance>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:DueDate>2020-10-27T11:59:00Z</t:DueDate>\n                </t:Task>\n            </Items>\n        </CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS CreateItem request for creating a task"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Task",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the CreateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    // Subject",
+							"    const itemSubject = responseMessage[\"m:Items\"][\"t:Task\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.equal(\"Test Task\");",
+							"",
+							"    // Due Date",
+							"    const itemDueDate = responseMessage[\"m:Items\"][\"t:Task\"][\"t:DueDate\"];",
+							"    pm.expect(itemDueDate).to.equal(\"2020-10-27T11:59:00.000Z\");",
+							"",
+							"    // Status",
+							"    const itemStatus = responseMessage[\"m:Items\"][\"t:Task\"][\"t:Status\"];",
+							"    pm.expect(itemStatus).to.equal(\"NotStarted\");",
+							"",
+							"    // Percent Complete",
+							"    const itemPercentComplete = responseMessage[\"m:Items\"][\"t:Task\"][\"t:PercentComplete\"];",
+							"    pm.expect(itemPercentComplete).to.equal(\"0\");",
+							"    ",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Task\");",
+							"",
+							"// Verify that the itemId of the task is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a task"
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateItem for Task",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    // ItemId - Only ItemId is returned from an update operation.  We must verify the updates in another test using GET",
+							"    const itemId = responseMessage[\"m:Items\"][\"t:Task\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+							"    const expectedItemId = pm.environment.get(\"itemId\");",
+							"    pm.expect(itemId).to.be.equal(expectedItemId);",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"UpdateItem for Task\");",
+							"",
+							"// Verify that the itemId and itemChangeKey are set in the environment.",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');",
+							"",
+							"// Save the current date, to be used for the task completion date, to the environment",
+							"pm.environment.set(\"taskCompletion\", new Date().toISOString());"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2013\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <UpdateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" ConflictResolution=\"AutoResolve\" MessageDisposition=\"SaveOnly\">\n            <ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Subject\"/>\n                            <t:Item>\n                                <t:Subject>Test #2</t:Subject>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Body\"/>\n                            <t:Item>\n                                <t:Body BodyType=\"HTML\">&lt;html\n                                    xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                                    xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                                    xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                                    xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;Adding a description and changing the due date to 10/8/21&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                                </t:Body>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Sensitivity\"/>\n                            <t:Item>\n                                <t:Sensitivity>Normal</t:Sensitivity>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Importance\"/>\n                            <t:Item>\n                                <t:Importance>Normal</t:Importance>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"task:DueDate\"/>\n                            <t:Task>\n                                <t:DueDate>2021-10-08T11:59:00Z</t:DueDate>\n                            </t:Task>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"task:CompleteDate\"/>\n                            <t:Task>\n                                <t:CompleteDate>{{taskCompletion}}</t:CompleteDate>\n                            </t:Task>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"task:Status\"/>\n                            <t:Task>\n                                <t:Status>Completed</t:Status>\n                            </t:Task>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                            <t:Item>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                                    <t:Value>false</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                            <t:Item>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                                    <t:Value>false</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:DeleteItemField>\n                            <t:FieldURI FieldURI=\"item:Categories\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:FieldURI FieldURI=\"task:Recurrence\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:FieldURI FieldURI=\"task:StartDate\"/>\n                        </t:DeleteItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </ItemChanges>\n        </UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS UpdatItem request for updating a task"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Task after update",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the CreateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    // Subject",
+							"    const itemSubject = responseMessage[\"m:Items\"][\"t:Task\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.equal(\"Test #2\");",
+							"",
+							"    // Due Date",
+							"    const itemDueDate = responseMessage[\"m:Items\"][\"t:Task\"][\"t:DueDate\"];",
+							"    pm.expect(itemDueDate).to.equal(\"2021-10-08T11:59:00.000Z\");",
+							"",
+							"    // Status",
+							"    const itemStatus = responseMessage[\"m:Items\"][\"t:Task\"][\"t:Status\"];",
+							"    pm.expect(itemStatus).to.equal(\"Completed\");",
+							"",
+							"    // Percent Complete",
+							"    const itemPercentComplete = responseMessage[\"m:Items\"][\"t:Task\"][\"t:PercentComplete\"];",
+							"    pm.expect(itemPercentComplete).to.equal(\"100\");",
+							"",
+							"    // Completed Date",
+							"    const completeDate = responseMessage[\"m:Items\"][\"t:Task\"][\"t:CompleteDate\"];",
+							"    pm.expect(completeDate).to.not.be.undefined;",
+							"    ",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Task\");",
+							"",
+							"// Verify that the itemId of the task is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                    <t:FieldURI FieldURI=\"task:CompleteDate\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a task"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateFolder for Task folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:CreateFolderResponse\"];",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const message = soapResponseMessages[\"m:CreateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify created folder\", function () {",
+							"",
+							"    pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const folders = message[\"m:Folders\"];",
+							"    const folder = folders[\"t:TasksFolder\"];",
+							"    pm.expect(folder).to.have.property(\"t:FolderId\");",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"Friday Tasks\");",
+							"",
+							"    // Save the folderId so it can be used in subsequent tests",
+							"    pm.environment.set(\"EWSTaskFolderId\", (folder[\"t:FolderId\"].$.Id)); ",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateFolder for Task folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ParentFolderId>\n                <t:DistinguishedFolderId Id=\"tasks\"></t:DistinguishedFolderId>\n            </m:ParentFolderId>\n            <m:Folders>\n                <t:Folder>\n                    <t:FolderClass>IPF.Task</t:FolderClass>\n                    <t:DisplayName>Friday Tasks</t:DisplayName>\n                </t:Folder>\n            </m:Folders>\n        </m:CreateFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Test the EWS CreateFolder API for creating a Task folder"
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for Task folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+							"const folder = folders[\"t:TasksFolder\"];",
+							"",
+							"",
+							"pm.test(\"Verify task folder created by CreateFolder.\", function () {",
+							"    pm.expect(\"NoError\").to.equal(soapGetFolderResponseMessage[\"m:ResponseCode\"]);",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.equal(pm.environment.get(\"EWSTaskFolderId\"));",
+							"    pm.expect(folder[\"t:FolderClass\"]).to.equal(\"IPF.Task\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"Friday Tasks\");",
+							"    pm.expect(folder[\"t:TotalCount\"]).to.eql(\"0\");",
+							"    pm.expect(folder[\"t:ChildFolderCount\"]).to.eql(\"0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for Task folder\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSTaskFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{EWSTaskFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify get folder response for task folder"
+			},
+			"response": []
+		},
+		{
+			"name": "Rename Task Folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:UpdateFolderResponse\"];",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const soapResponseMessage = soapResponseMessages[\"m:UpdateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated task folder\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    const folders = soapResponseMessage[\"m:Folders\"];",
+							"    const folder = folders[\"t:TasksFolder\"];",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.eql(pm.environment.get(\"EWSTaskFolderId\")); // Should keep same folder id",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.eql(\"Friday Todos\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Rename Task Folder\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSTaskFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <UpdateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n      <FolderChanges>\n        <t:FolderChange>\n          <t:FolderId Id=\"{{EWSTaskFolderId}}\" ChangeKey=\"ck-{{EWSTaskFolderId}}\"/>\n          <t:Updates>\n            <t:SetFolderField>\n              <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n              <t:Folder>\n                <t:DisplayName>Friday Todos</t:DisplayName>\n              </t:Folder>\n            </t:SetFolderField>\n          </t:Updates>\n        </t:FolderChange>\n      </FolderChanges>\n    </UpdateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Update the task folder by changing its name"
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for Task folder after rename",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+							"const folder = folders[\"t:TasksFolder\"];",
+							"",
+							"",
+							"pm.test(\"Verify renamed task folder.\", function () {",
+							"    pm.expect(\"NoError\").to.equal(soapGetFolderResponseMessage[\"m:ResponseCode\"]);",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.equal(pm.environment.get(\"EWSTaskFolderId\"));",
+							"    pm.expect(folder[\"t:FolderClass\"]).to.equal(\"IPF.Task\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"Friday Todos\");",
+							"    pm.expect(folder[\"t:TotalCount\"]).to.eql(\"0\");",
+							"    pm.expect(folder[\"t:ChildFolderCount\"]).to.eql(\"0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for Task folder after rename\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSTaskFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{EWSTaskFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify get folder response for task folder after rename"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateItem for Task in Folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the newly created task's itemId and itemChangeKey to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody);",
+							"    pm.environment.set('taskItemId', $('t\\\\:ItemId').attr('id'));",
+							"    pm.environment.set('taskItemChangeKey', $('t\\\\:ItemId').attr('changekey'));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateItem for Task in a folder\");",
+							"",
+							"// Verify that the taskFolderId environment variable is set.",
+							"pm.expect(pm.environment.get(\"EWSTaskFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"V2016_04_13\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <CreateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" MessageDisposition=\"SaveOnly\">\n           <SavedItemFolderId>\n                <t:FolderId Id=\"{{EWSTaskFolderId}}\"/>\n            </SavedItemFolderId>\n            <Items>\n                <t:Task>\n                    <t:Subject>Submit Timecard</t:Subject>\n                    <t:Sensitivity>Normal</t:Sensitivity>\n                    <t:Body BodyType=\"HTML\">&lt;html\n                        xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                        xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                        xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                        xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;This is a test task&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                    </t:Body>\n                    <t:Importance>Normal</t:Importance>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:DueDate>2020-10-27T11:59:00Z</t:DueDate>\n                </t:Task>\n            </Items>\n        </CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS CreateItem request for creating a task in a folder"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Task in Folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the CreateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    console.log(jsonObject);",
+							"    // const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    // pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    // // Subject",
+							"    // const itemSubject = responseMessage[\"m:Items\"][\"t:Task\"][\"t:Subject\"];",
+							"    // pm.expect(itemSubject).to.equal(\"Test Task\");",
+							"",
+							"    // // Due Date",
+							"    // const itemDueDate = responseMessage[\"m:Items\"][\"t:Task\"][\"t:DueDate\"];",
+							"    // pm.expect(itemDueDate).to.equal(\"2020-10-27T11:59:00.000Z\");",
+							"",
+							"    // // Status",
+							"    // const itemStatus = responseMessage[\"m:Items\"][\"t:Task\"][\"t:Status\"];",
+							"    // pm.expect(itemStatus).to.equal(\"NotStarted\");",
+							"",
+							"    // // Percent Complete",
+							"    // const itemPercentComplete = responseMessage[\"m:Items\"][\"t:Task\"][\"t:PercentComplete\"];",
+							"    // pm.expect(itemPercentComplete).to.equal(\"0\");",
+							"    ",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Task in Folder\");",
+							"",
+							"// Verify that the itemId of the task is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"taskItemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{taskItemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a task created in a folder"
+			},
+			"response": []
+		},
+		{
+			"name": "Move task to folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"",
+							"var soapResponse = soapBody[\"m:MoveItemResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:MoveItemResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated task folder\", function () {",
+							"    console.log(soapResponseMessage);",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    const items = soapResponseMessage[\"m:Items\"];",
+							"    const note = items[\"t:Task\"];",
+							"    pm.expect(note[\"t:ItemId\"].$.Id).to.eql(pm.environment.get(\"itemId\")); ",
+							"    pm.expect(note).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(note[\"t:ParentFolderId\"].$.Id).to.eql(pm.environment.get(\"EWSTaskFolderId\"));",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Move task to folder\");",
+							"",
+							"// Verify that the itemId of the note is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSTaskFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:MoveItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ToFolderId>\n                <t:FolderId Id=\"{{EWSTaskFolderId}}\" ChangeKey=\"ck-{{EWSTaskFolderId}}\"/>\n            </m:ToFolderId>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n            </m:ItemIds>\n        </m:MoveItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Move the recently created task to the folder"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteItem for Task in folder",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"DeleteItem for Task in folder\");",
+							"",
+							"// Verify that the itemId is set in the environment.",
+							"pm.expect(pm.environment.get(\"taskItemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    pm.environment.unset(\"taskItemId\");",
+							"    pm.environment.unset(\"taskItemChangeKey\");",
+							"    pm.environment.unset(\"taskCompletion\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <DeleteItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" DeleteType=\"SoftDelete\" AffectedTaskOccurrences=\"AllOccurrences\">\n            <ItemIds>\n                <t:ItemId Id=\"{{taskItemId}}\"/>\n            </ItemIds>\n        </DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Test to exercise the EWS DeleteItem request to delete a task"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteItem for Task",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"DeleteItem for task\");",
+							"",
+							"// Verify that the itemId is set in the environment.",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"DeleteItem\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    pm.environment.unset(\"itemId\");",
+							"    pm.environment.unset(\"itemChangeKey\");",
+							"    pm.environment.unset(\"taskCompletion\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <DeleteItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" DeleteType=\"SoftDelete\" AffectedTaskOccurrences=\"AllOccurrences\">\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Test to exercise the EWS DeleteItem request to delete a task"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteFolder for Task folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+							"",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Delete folder response is correct\", function() {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"});",
+							"",
+							"pm.environment.unset(\"EWSTaskFolderId\");",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"DeleteFolder for Task folder\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSTaskFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        <t:FolderId Id=\"{{EWSTaskFolderId}}\" />\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Delete the Task folder created from CreateFolder test"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verify that email and password are set in the environment.",
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"// Setup auth headers",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Clear the tasksFolderId from the environment.",
+					"pm.environment.unset(\"tasksFolderId\");"
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,1385 @@
+{
+	"info": {
+		"_postman_id": "6de5b363-b001-47fd-b15f-b28bd3891160",
+		"name": "ews notes tests",
+		"description": "Tests for notes EWS operations. Use with the ews environment.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Delegated notes tests",
+			"item": [
+				{
+					"name": "GetFolder - get delegator notes EWS Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the folderId of the notes folder to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									"pm.test(\"Verify Notes folderId\", function () {",
+									"    const $ = cheerio.load(responseBody);",
+									"    const folderId = $('t\\\\:FolderId').attr('id');",
+									"    pm.expect(folderId).to.be.a('string');",
+									"    pm.environment.set('notesFolderEWSId', $('t\\\\:FolderId').attr('id'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//After adding the API delegation, replace it with real delegator email",
+									"pm.environment.set(\"delegatorEmail\", pm.environment.get(\"email\"));",
+									"",
+									"console.log(\"GetFolder for delegated notes\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"notes\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetFolder request in order to get the folderId of the notes folder to be used when creating a note"
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem - create note in delegator notes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the newly created note's itemId and itemChangeKey to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									"pm.test(\"Verify create response body\", function() {",
+									"    // Parse our the itemId and itemChangeKey and save them to the environment",
+									"    const $ = cheerio.load(responseBody);",
+									"    const itemId = $('t\\\\:ItemId').attr('id');",
+									"    pm.expect(itemId).to.be.a('string');",
+									"    const itemChangeKey = $('t\\\\:ItemId').attr('changekey');",
+									"    pm.expect(itemChangeKey).to.be.a('string');",
+									"",
+									"    const parentFolderId = $('t\\\\:ParentFolderId').attr('id');",
+									"    pm.expect(parentFolderId).to.be.eql(pm.environment.get('notesFolderEWSId'));",
+									"",
+									"    pm.environment.set('itemId', itemId);",
+									"    pm.environment.set('itemChangeKey', itemChangeKey);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateItem for delegated Note\");",
+									"",
+									"// Verify that the notesFolderId environment variable is set.",
+									"pm.expect(pm.environment.get(\"notesFolderEWSId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{notesFolderEWSId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:Item>\n                    <t:ItemClass>IPM.StickyNote</t:ItemClass>\n                    <t:Subject>New Note</t:Subject>\n                    <t:Body BodyType=\"HTML\">&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body&gt;&lt;br&gt;&lt;/body&gt;&lt;/html&gt;</t:Body>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35584\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>3</t:Value>\n                    </t:ExtendedProperty>\n                </t:Item>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS CreateItem request for creating a note"
+					},
+					"response": []
+				},
+				{
+					"name": "GetItem - get delegator note",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the CreateItem call.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"});",
+									"",
+									"pm.test(\"Verify create response body for note\", function() {",
+									"    const $ = cheerio.load(responseBody);",
+									"    const itemId = $('t\\\\:ItemId').attr('id');",
+									"    const itemChangeKey = $('t\\\\:ItemId').attr('changekey');",
+									"    const parentFolderId = $('t\\\\:ParentFolderId').attr('id');",
+									"",
+									"    pm.expect(itemId).to.equal(pm.environment.get('itemId'));",
+									"    pm.expect(itemChangeKey).to.equal(pm.environment.get('itemChangeKey'));",
+									"    pm.expect(parentFolderId).to.be.eql(pm.environment.get('notesFolderEWSId')); ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"GetItem for Delegated Note\");",
+									"",
+									"// Verify that the itemId of the note is set in the enviroonment",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetItem request for fetching a note"
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateItem - update delegator notes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									"pm.test(\"Verify updated response body for note\", function() {",
+									"    // Subject",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ItemId\"].$.Id;",
+									"    pm.expect(itemId).to.equal(pm.environment.get(\"itemId\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItem for delegated Note\");",
+									"",
+									"// Verify that the itemId and itemChangeKey are set in the environment.",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateItem ConflictResolution=\"AutoResolve\" MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Subject\"/>\n                            <t:Item>\n                                <t:Subject>Test for delegation</t:Subject>\n                            </t:Item>\n                        </t:SetItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </m:ItemChanges>\n        </m:UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS UpdatItem request for updating a note"
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderItems for delegator notes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+									"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"const soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+									"",
+									"pm.test(\"Verify response\", function () {",
+									"        pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"        pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"        pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+									"});",
+									"",
+									"pm.test(\"Test that the added note is returned\", function () {",
+									"    const create = soapResponseMessage[\"m:Changes\"][\"t:Create\"];",
+									"    if (Array.isArray(create)) {",
+									"        const note = create.find(item => item[\"t:Message\"] && item[\"t:Message\"][\"t:ItemId\"].$.Id === pm.environment.get(\"itemId\"));",
+									"        pm.expect(note, 'Created item not found').to.not.be.undefined;",
+									"",
+									"        const parentFolderId = note[\"t:Message\"][\"t:ParentFolderId\"].$.Id;",
+									"        pm.expect(parentFolderId).to.equal(pm.environment.get(\"notesFolderEWSId\"));",
+									"    } else {",
+									"        const itemId = create[\"t:Message\"][\"t:ItemId\"].$.Id;",
+									"        pm.expect(itemId).to.equal(pm.environment.get(\"itemId\"));",
+									"",
+									"        const parentFolderId = create[\"t:Message\"][\"t:ParentFolderId\"].$.Id;",
+									"        pm.expect(parentFolderId).to.equal(pm.environment.get(\"notesFolderEWSId\"));",
+									"    }",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"SyncFolderItems for delegated notes\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:FolderId Id=\"{{notesFolderEWSId}}\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>100</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteItem - delete delegetor notes",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"DeleteItem fo delegated notes\");",
+									"// Verify that the itemId is set in the environment.",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"DeleteItem\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"delegatorEmail\");",
+									"    pm.environment.unset(\"notesFolderEWSId\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <DeleteItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" DeleteType=\"SoftDelete\" AffectedTaskOccurrences=\"AllOccurrences\">\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Test to exercise the EWS DeleteItem request to delete a note"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GetFolder for notes folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the folderId of the notes folder to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"});",
+							"",
+							"pm.test(\"Verify Notes folderId\", function () {",
+							"    const $ = cheerio.load(responseBody);",
+							"    const folderId = $('t\\\\:FolderId').attr('id');",
+							"    pm.expect(folderId).to.be.a('string');",
+							"    pm.environment.set('notesFolderId', $('t\\\\:FolderId').attr('id'));",
+							"    ",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for notes folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"notes\"></t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetFolder request in order to get the folderId of the notes folder to be used when creating a note"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateItem for Note",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the newly created note's itemId and itemChangeKey to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"});",
+							"",
+							"pm.test(\"Verify create response body\", function() {",
+							"    // Parse our the itemId and itemChangeKey and save them to the environment",
+							"    const $ = cheerio.load(responseBody);",
+							"    const itemId = $('t\\\\:ItemId').attr('id');",
+							"    pm.expect(itemId).to.be.a('string');",
+							"    const itemChangeKey = $('t\\\\:ItemId').attr('changekey');",
+							"    pm.expect(itemChangeKey).to.be.a('string');",
+							"",
+							"    pm.environment.set('itemId', itemId);",
+							"    pm.environment.set('itemChangeKey', itemChangeKey);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateItem for Note\");",
+							"",
+							"// Verify that the notesFolderId environment variable is set.",
+							"pm.expect(pm.environment.get(\"notesFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{notesFolderId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:Item>\n                    <t:ItemClass>IPM.StickyNote</t:ItemClass>\n                    <t:Subject>New Note</t:Subject>\n                    <t:Body BodyType=\"HTML\">&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body&gt;&lt;br&gt;&lt;/body&gt;&lt;/html&gt;</t:Body>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35584\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>3</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35586\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>200</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35587\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>166</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35588\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>110</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35589\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>110</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34064\" PropertyType=\"Integer\"/>\n                        <t:Value>272</t:Value>\n                    </t:ExtendedProperty>\n                </t:Item>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS CreateItem request for creating a note"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Note",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the CreateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"});",
+							"",
+							"pm.test(\"Verify create response body for note\", function() {",
+							"    const $ = cheerio.load(responseBody);",
+							"    const itemId = $('t\\\\:ItemId').attr('id');",
+							"    const itemChangeKey = $('t\\\\:ItemId').attr('changekey');",
+							"",
+							"    pm.expect(itemId).to.equal(pm.environment.get('itemId'));",
+							"    pm.expect(itemChangeKey).to.equal(pm.environment.get('itemChangeKey'));",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Note\");",
+							"",
+							"// Verify that the itemId of the note is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a note"
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateItem for Note",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+							"",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"});",
+							"",
+							"pm.test(\"Verify updated response body for note\", function() {",
+							"    // Subject",
+							"    const itemId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ItemId\"].$.Id;",
+							"    pm.expect(itemId).to.equal(pm.environment.get(\"itemId\"));",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"UpdateItem for Note\");",
+							"",
+							"// Verify that the itemId and itemChangeKey are set in the environment.",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');",
+							"",
+							"// Save the current date, to be used for the task completion date, to the environment",
+							"pm.environment.set(\"taskCompletion\", new Date().toISOString());"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateItem ConflictResolution=\"AutoResolve\" MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Subject\"/>\n                            <t:Item>\n                                <t:Subject>Test for Automation</t:Subject>\n                            </t:Item>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Body\"/>\n                            <t:Item>\n                                <t:Body BodyType=\"HTML\">&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body&gt;Test for Automation&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;ul class=\"Apple-dash-list\"&gt;&lt;li&gt;item 1&lt;/li&gt;&lt;li&gt;item 2&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</t:Body>\n                            </t:Item>\n                        </t:SetItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </m:ItemChanges>\n        </m:UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS UpdatItem request for updating a note"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Note after Update",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonObject = xml2Json(responseBody);",
+							"const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"});",
+							"",
+							"pm.test(\"Verify updated response body for note\", function() {",
+							"    // Subject",
+							"    const itemSubject = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.equal(\"Test for Automation\");",
+							"",
+							"    // Body",
+							"    const itemStatus = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Body\"][\"_\"];",
+							"    pm.expect(itemStatus).to.equal('<html><head></head><body>Test for Automation<div><br></div><div><ul class=\"Apple-dash-list\"><li>item 1</li><li>item 2</li></ul></div></body></html>');",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Note after Update\");",
+							"",
+							"// Verify that the itemId of the note is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a note after it has been updated"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateFolder for Notes folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:CreateFolderResponse\"];",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const message = soapResponseMessages[\"m:CreateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify created folder\", function () {",
+							"",
+							"    pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const folders = message[\"m:Folders\"];",
+							"    const folder = folders[\"t:Folder\"];",
+							"    pm.expect(folder).to.have.property(\"t:FolderId\");",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"Meeting Minutes\");",
+							"",
+							"    // Save the folderId so it can be used in subsequent tests",
+							"    pm.environment.set(\"EWSNotesFolderId\", (folder[\"t:FolderId\"].$.Id)); ",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateFolder for Notes folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ParentFolderId>\n                <t:DistinguishedFolderId Id=\"root\"></t:DistinguishedFolderId>\n            </m:ParentFolderId>\n            <m:Folders>\n                <t:Folder>\n                    <t:FolderClass>IPF.StickyNote</t:FolderClass>\n                    <t:DisplayName>Meeting Minutes</t:DisplayName>\n                </t:Folder>\n            </m:Folders>\n        </m:CreateFolder>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for Notes folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+							"const folder = folders[\"t:Folder\"];",
+							"",
+							"",
+							"pm.test(\"Verify notes folder created by CreateFolder.\", function () {",
+							"    pm.expect(\"NoError\").to.equal(soapGetFolderResponseMessage[\"m:ResponseCode\"]);",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.equal(pm.environment.get(\"EWSNotesFolderId\"));",
+							"    pm.expect(folder[\"t:FolderClass\"]).to.equal(\"IPF.StickyNote\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"Meeting Minutes\");",
+							"    pm.expect(folder[\"t:TotalCount\"]).to.eql(\"0\");",
+							"    pm.expect(folder[\"t:ChildFolderCount\"]).to.eql(\"0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for Notes folder\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSNotesFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{EWSNotesFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder folder response for notes folder"
+			},
+			"response": []
+		},
+		{
+			"name": "Rename Notes Folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:UpdateFolderResponse\"];",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const soapResponseMessage = soapResponseMessages[\"m:UpdateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated notes folder\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    const folders = soapResponseMessage[\"m:Folders\"];",
+							"    const folder = folders[\"t:Folder\"];",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.eql(pm.environment.get(\"EWSNotesFolderId\")); // Should keep same folder id",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.eql(\"Meeting Details\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Rename Notes Folder\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSNotesFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <UpdateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n      <FolderChanges>\n        <t:FolderChange>\n          <t:FolderId Id=\"{{EWSNotesFolderId}}\" ChangeKey=\"ck-{{EWSNotesFolderId}}\"/>\n          <t:Updates>\n            <t:SetFolderField>\n              <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n              <t:Folder>\n                <t:DisplayName>Meeting Details</t:DisplayName>\n              </t:Folder>\n            </t:SetFolderField>\n          </t:Updates>\n        </t:FolderChange>\n      </FolderChanges>\n    </UpdateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Update the folder by changing its name"
+			},
+			"response": []
+		},
+		{
+			"name": "Move note to folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"",
+							"var soapResponse = soapBody[\"m:MoveItemResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:MoveItemResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated notes folder\", function () {",
+							"    console.log(soapResponseMessage);",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    const items = soapResponseMessage[\"m:Items\"];",
+							"    const note = items[\"t:Message\"];",
+							"    pm.expect(note[\"t:ItemId\"].$.Id).to.eql(pm.environment.get(\"itemId\")); ",
+							"    pm.expect(note).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(note[\"t:ParentFolderId\"].$.Id).to.eql(pm.environment.get(\"EWSNotesFolderId\"));",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Move note to folder\");",
+							"",
+							"// Verify that the itemId of the note is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSNotesFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:MoveItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ToFolderId>\n                <t:FolderId Id=\"{{EWSNotesFolderId}}\" ChangeKey=\"ck-{{EWSNotesFolderId}}\"/>\n            </m:ToFolderId>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n            </m:ItemIds>\n        </m:MoveItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Move the recently created note to the newly created folder"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Note after move to folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonObject = xml2Json(responseBody);",
+							"const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"});",
+							"",
+							"pm.test(\"Verify updated response body for note after move\", function() {",
+							"    // Subject",
+							"    const itemSubject = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Subject\"];",
+							"    pm.expect(itemSubject).to.equal(\"Test for Automation\");",
+							"",
+							"    const parentFolderId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+							"    pm.expect(parentFolderId).to.equal(pm.environment.get(\"EWSNotesFolderId\"));",
+							"",
+							"    // Body",
+							"    const itemStatus = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Body\"][\"_\"];",
+							"    pm.expect(itemStatus).to.equal('<html><head></head><body>Test for Automation<div><br></div><div><ul class=\"Apple-dash-list\"><li>item 1</li><li>item 2</li></ul></div></body></html>');",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Note after move to folder\");",
+							"",
+							"// Verify that the itemId of the note is set in the enviroonment",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a note after it has been moved to a folder"
+			},
+			"response": []
+		},
+		{
+			"name": "SyncFolderItems w/o SyncState for Notes folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+							"",
+							"pm.test(\"Verify response\", function () {",
+							"        pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"        pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"        pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+							"});",
+							"",
+							"pm.test(\"Test that the added note is returned\", function () {",
+							"    const create = soapResponseMessage[\"m:Changes\"][\"t:Create\"];",
+							"    const itemId = create[\"t:Message\"][\"t:ItemId\"].$.Id;",
+							"    const noteId = pm.environment.get(\"itemId\");",
+							"    pm.expect(itemId).to.equal(noteId);",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:FolderId Id=\"{{EWSNotesFolderId}}\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>100</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for Notes folder after add note",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+							"const folder = folders[\"t:Folder\"];",
+							"",
+							"console.log(folder);",
+							"",
+							"pm.test(\"Verify notes folder created by CreateFolder.\", function () {",
+							"    pm.expect(\"NoError\").to.equal(soapGetFolderResponseMessage[\"m:ResponseCode\"]);",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.equal(pm.environment.get(\"EWSNotesFolderId\"));",
+							"    pm.expect(folder[\"t:FolderClass\"]).to.equal(\"IPF.StickyNote\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"Meeting Details\");",
+							"    pm.expect(folder[\"t:TotalCount\"]).to.eql(\"1\");",
+							"    pm.expect(folder[\"t:ChildFolderCount\"]).to.eql(\"0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for Notes folder after add note\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSNotesFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{EWSNotesFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder folder response for notes folder after adding a note"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteItem for Note",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Verify that the itemId is set in the environment.",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+							"pm.test(\"Status test\", function () {",
+							"    console.log(\"DeleteItem\");",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    pm.environment.unset(\"itemId\");",
+							"    pm.environment.unset(\"itemChangeKey\");",
+							"",
+							"    pm.environment.unset(\"taskCompletion\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <DeleteItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" DeleteType=\"SoftDelete\" AffectedTaskOccurrences=\"AllOccurrences\">\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </ItemIds>\n        </DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Test to exercise the EWS DeleteItem request to delete a note"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteFolder for Notes folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+							"console.log(soapResponse);",
+							"",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Delete folder response is correct\", function() {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"});",
+							"",
+							"pm.environment.unset(\"EWSNotesFolderId\");",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"DeleteFolder for Notes folder\");",
+							"",
+							"// Verify that the folderId is set in the environment.",
+							"pm.expect(pm.environment.get(\"EWSNotesFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        <t:FolderId Id=\"{{EWSNotesFolderId}}\" />\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Delete the Notes folder created from CreateFolder test"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verify that email and password are set in the environment.",
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"// Setup auth headers",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Clear the tasksFolderId from the environment.",
+					"pm.environment.unset(\"notesFolderId\");"
+				]
+			}
+		}
+	]
+}

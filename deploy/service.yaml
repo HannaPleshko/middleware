@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+#   annotations:
+#     prometheus.io/scrape: "true"
+#     prometheus.io/scheme: http
+#     prometheus.io/port: "8009"
+  labels:
+    app: ews
+  name: ews
+spec:
+  ports:
+    - name: 3000-ews
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+  selector:
+    app: ews
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

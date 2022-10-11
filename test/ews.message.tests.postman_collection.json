@@ -1,0 +1,1735 @@
+{
+	"info": {
+		"_postman_id": "9fdb9653-a3cb-4994-8971-4b8141688d85",
+		"name": "ews  message tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Message Tests",
+			"item": [
+				{
+					"name": "CreateFolder MessageTest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateFolderResponse\"][\"m:ResponseMessages\"][\"m:CreateFolderResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var folderId = responseMessage[\"m:Folders\"][\"t:Folder\"][\"t:FolderId\"][\"$\"];",
+									"    pm.environment.set(\"messageTestFolderId\", folderId[\"Id\"])",
+									"    pm.environment.set(\"messageTestFolderChangeKey\", folderId[\"ChangeKey\"])",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateFolder MessageTest\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n      xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ParentFolderId>\n        <t:DistinguishedFolderId Id=\"msgfolderroot\"/>\n      </ParentFolderId>\n      <Folders>\n        <t:Folder>\n          <t:DisplayName>MessageTest</t:DisplayName>\n        </t:Folder>\n      </Folders>\n    </CreateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UploadItems CreateNew",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UploadItemsResponse\"][\"m:ResponseMessages\"][\"m:UploadItemsResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var messageId = responseMessage[\"m:ItemId\"][\"$\"];",
+									"    pm.environment.set(\"messageTestItemId\", messageId[\"Id\"])",
+									"    pm.environment.set(\"messageTestItemChangeKey\", messageId[\"ChangeKey\"])",
+									"});",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItems CreateNew\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2010_SP1\" />\n  </soap:Header>\n  <soap:Body>\n    <m:UploadItems>\n      <m:Items>\n        <t:Item CreateAction=\"CreateNew\">\n          <t:ParentFolderId Id=\"{{messageTestFolderId}}\" ChangeKey=\"{{messageTestFolderChangeKey}}\"/>\n          <t:Data>\n            VXNlci1BZ2VudDogTWljcm9zb2Z0LU1hY091dGxvb2svMTYuMzguMjAwNjE0MDENCkRhdGU6IEZyaSwgMTAgSnVsIDIwMjAgMTE6NDk6MjIgLTA0MDANClN1YmplY3Q6IEhpDQpGcm9tOiAiam9obi5kb2VAMjdlODMzNWFiYmQzLm5ncm9rLmlvIiA8am9obi5kb2VAMjdlODMzNWFiYmQzLm5ncm9rLmlvPg0KVG86IERhdmlkIEtlbm5lZHkgPGRhdmlkLmtlbm5lZHlAaGNsLmNvbT4NCk1lc3NhZ2UtSUQ6IDw3RDhCNjRBOC05QkI1LTQ5M0MtOTk1Mi0yQzFERTg4NkY4MjRAMjdlODMzNWFiYmQzLm5ncm9rLmlvPg0KVGhyZWFkLVRvcGljOiBIaQ0KTWltZS12ZXJzaW9uOiAxLjANCkNvbnRlbnQtdHlwZTogbXVsdGlwYXJ0L2FsdGVybmF0aXZlOw0KCWJvdW5kYXJ5PSJCXzM2NzcyMjY1NjJfMTc5MTg3MzAyNCINCg0KPiBUaGlzIG1lc3NhZ2UgaXMgaW4gTUlNRSBmb3JtYXQuIFNpbmNlIHlvdXIgbWFpbCByZWFkZXIgZG9lcyBub3QgdW5kZXJzdGFuZA0KdGhpcyBmb3JtYXQsIHNvbWUgb3IgYWxsIG9mIHRoaXMgbWVzc2FnZSBtYXkgbm90IGJlIGxlZ2libGUuDQoNCi0tQl8zNjc3MjI2NTYyXzE3OTE4NzMwMjQNCkNvbnRlbnQtdHlwZTogdGV4dC9wbGFpbjsNCgljaGFyc2V0PSJVVEYtOCINCkNvbnRlbnQtdHJhbnNmZXItZW5jb2Rpbmc6IDdiaXQNCg0KSGVsbG8gVGFueWENCg0KDQotLUJfMzY3NzIyNjU2Ml8xNzkxODczMDI0DQpDb250ZW50LXR5cGU6IHRleHQvaHRtbDsNCgljaGFyc2V0PSJVVEYtOCINCkNvbnRlbnQtdHJhbnNmZXItZW5jb2Rpbmc6IHF1b3RlZC1wcmludGFibGUNCg0KPGh0bWwgeG1sbnM6bz0zRCJ1cm46c2NoZW1hcy1taWNyb3NvZnQtY29tOm9mZmljZTpvZmZpY2UiIHhtbG5zOnc9M0QidXJuOnNjaGVtYT0NCnMtbWljcm9zb2Z0LWNvbTpvZmZpY2U6d29yZCIgeG1sbnM6bT0zRCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL29mZmljZS8yMD0NCjA0LzEyL29tbWwiIHhtbG5zPTNEImh0dHA6Ly93d3cudzMub3JnL1RSL1JFQy1odG1sNDAiPjxoZWFkPjxtZXRhIGh0dHAtZXF1aXY9M0RDPQ0Kb250ZW50LVR5cGUgY29udGVudD0zRCJ0ZXh0L2h0bWw7IGNoYXJzZXQ9M0R1dGYtOCI+PG1ldGEgbmFtZT0zREdlbmVyYXRvciBjb250ZW50PTNEPQ0KIk1pY3Jvc29mdCBXb3JkIDE1IChmaWx0ZXJlZCBtZWRpdW0pIj48c3R5bGU+PCEtLQ0KLyogRm9udCBEZWZpbml0aW9ucyAqLw0KQGZvbnQtZmFjZQ0KCXtmb250LWZhbWlseToiQ2FtYnJpYSBNYXRoIjsNCglwYW5vc2UtMToyIDQgNSAzIDUgNCA2IDMgMiA0O30NCkBmb250LWZhY2UNCgl7Zm9udC1mYW1pbHk6Q2FsaWJyaTsNCglwYW5vc2UtMToyIDE1IDUgMiAyIDIgNCAzIDIgNDt9DQovKiBTdHlsZSBEZWZpbml0aW9ucyAqLw0KcC5Nc29Ob3JtYWwsIGxpLk1zb05vcm1hbCwgZGl2Lk1zb05vcm1hbA0KCXttYXJnaW46MGluOw0KCW1hcmdpbi1ib3R0b206LjAwMDFwdDsNCglmb250LXNpemU6MTEuMHB0Ow0KCWZvbnQtZmFtaWx5OiJDYWxpYnJpIixzYW5zLXNlcmlmO30NCnNwYW4uRW1haWxTdHlsZTE3DQoJe21zby1zdHlsZS10eXBlOnBlcnNvbmFsLWNvbXBvc2U7DQoJZm9udC1mYW1pbHk6IkNhbGlicmkiLHNhbnMtc2VyaWY7DQoJY29sb3I6d2luZG93dGV4dDt9DQouTXNvQ2hwRGVmYXVsdA0KCXttc28tc3R5bGUtdHlwZTpleHBvcnQtb25seTsNCglmb250LWZhbWlseToiQ2FsaWJyaSIsc2Fucy1zZXJpZjt9DQpAcGFnZSBXb3JkU2VjdGlvbjENCgl7c2l6ZTo4LjVpbiAxMS4waW47DQoJbWFyZ2luOjEuMGluIDEuMGluIDEuMGluIDEuMGluO30NCmRpdi5Xb3JkU2VjdGlvbjENCgl7cGFnZTpXb3JkU2VjdGlvbjE7fQ0KLS0+PC9zdHlsZT48L2hlYWQ+PGJvZHkgbGFuZz0zREVOLVVTIGxpbms9M0QiIzA1NjNDMSIgdmxpbms9M0QiIzk1NEY3MiI+PGRpdiBjbGFzPQ0Kcz0zRFdvcmRTZWN0aW9uMT48cCBjbGFzcz0zRE1zb05vcm1hbD5IZWxsbyBUYW55YTxvOnA+PC9vOnA+PC9wPjwvZGl2PjwvYm9keT48L2g9DQp0bWw+DQoNCi0tQl8zNjc3MjI2NTYyXzE3OTE4NzMwMjQtLQ0KDQo=\n          </t:Data>\n        </t:Item>\n      </m:Items>\n    </m:UploadItems>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UploadItems Update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UploadItemsResponse\"][\"m:ResponseMessages\"][\"m:UploadItemsResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItems Update\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2010_SP1\" />\n  </soap:Header>\n  <soap:Body>\n    <m:UploadItems>\n      <m:Items>\n        <t:Item CreateAction=\"Update\">\n          <t:ParentFolderId Id=\"{{messageTestFolderId}}\" ChangeKey=\"{{messageTestFolderChangeKey}}\"/>\n          <t:ItemId Id=\"{{messageTestItemId}}\" ChangeKey=\"{{messageTestItemChangeKey}}\"/>\n          <t:Data>\n            VXNlci1BZ2VudDogTWljcm9zb2Z0LU1hY091dGxvb2svMTYuMzguMjAwNjE0MDEKRGF0ZTogRnJpLCAxMCBKdWwgMjAyMCAxMTo0OToyMiAtMDQwMApTdWJqZWN0OiBIaQpGcm9tOiAiam9obi5kb2VAMjdlODMzNWFiYmQzLm5ncm9rLmlvIiA8am9obi5kb2VAMjdlODMzNWFiYmQzLm5ncm9rLmlvPgpUbzogRGF2aWQgS2VubmVkeSA8ZGF2aWQua2VubmVkeUBoY2wuY29tPgpNZXNzYWdlLUlEOiA8N0Q4QjY0QTgtOUJCNS00OTNDLTk5NTItMkMxREU4ODZGODI0QDI3ZTgzMzVhYmJkMy5uZ3Jvay5pbz4KVGhyZWFkLVRvcGljOiBIaQpNaW1lLXZlcnNpb246IDEuMApDb250ZW50LXR5cGU6IG11bHRpcGFydC9hbHRlcm5hdGl2ZTsKCWJvdW5kYXJ5PSJCXzM2NzcyMjY1NjJfMTc5MTg3MzAyNCIKCj4gVGhpcyBtZXNzYWdlIGlzIGluIE1JTUUgZm9ybWF0LiBTaW5jZSB5b3VyIG1haWwgcmVhZGVyIGRvZXMgbm90IHVuZGVyc3RhbmQKdGhpcyBmb3JtYXQsIHNvbWUgb3IgYWxsIG9mIHRoaXMgbWVzc2FnZSBtYXkgbm90IGJlIGxlZ2libGUuCgotLUJfMzY3NzIyNjU2Ml8xNzkxODczMDI0CkNvbnRlbnQtdHlwZTogdGV4dC9wbGFpbjsKCWNoYXJzZXQ9IlVURi04IgpDb250ZW50LXRyYW5zZmVyLWVuY29kaW5nOiA3Yml0CgpIZWxsbyBiYWNrIGF0IHlhIQoKCi0tQl8zNjc3MjI2NTYyXzE3OTE4NzMwMjQKQ29udGVudC10eXBlOiB0ZXh0L2h0bWw7CgljaGFyc2V0PSJVVEYtOCIKQ29udGVudC10cmFuc2Zlci1lbmNvZGluZzogcXVvdGVkLXByaW50YWJsZQoKPGh0bWwgeG1sbnM6bz0zRCJ1cm46c2NoZW1hcy1taWNyb3NvZnQtY29tOm9mZmljZTpvZmZpY2UiIHhtbG5zOnc9M0QidXJuOnNjaGVtYT0Kcy1taWNyb3NvZnQtY29tOm9mZmljZTp3b3JkIiB4bWxuczptPTNEImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vb2ZmaWNlLzIwPQowNC8xMi9vbW1sIiB4bWxucz0zRCJodHRwOi8vd3d3LnczLm9yZy9UUi9SRUMtaHRtbDQwIj48aGVhZD48bWV0YSBodHRwLWVxdWl2PTNEQz0Kb250ZW50LVR5cGUgY29udGVudD0zRCJ0ZXh0L2h0bWw7IGNoYXJzZXQ9M0R1dGYtOCI+PG1ldGEgbmFtZT0zREdlbmVyYXRvciBjb250ZW50PTNEPQoiTWljcm9zb2Z0IFdvcmQgMTUgKGZpbHRlcmVkIG1lZGl1bSkiPjxzdHlsZT48IS0tCi8qIEZvbnQgRGVmaW5pdGlvbnMgKi8KQGZvbnQtZmFjZQoJe2ZvbnQtZmFtaWx5OiJDYW1icmlhIE1hdGgiOwoJcGFub3NlLTE6MiA0IDUgMyA1IDQgNiAzIDIgNDt9CkBmb250LWZhY2UKCXtmb250LWZhbWlseTpDYWxpYnJpOwoJcGFub3NlLTE6MiAxNSA1IDIgMiAyIDQgMyAyIDQ7fQovKiBTdHlsZSBEZWZpbml0aW9ucyAqLwpwLk1zb05vcm1hbCwgbGkuTXNvTm9ybWFsLCBkaXYuTXNvTm9ybWFsCgl7bWFyZ2luOjBpbjsKCW1hcmdpbi1ib3R0b206LjAwMDFwdDsKCWZvbnQtc2l6ZToxMS4wcHQ7Cglmb250LWZhbWlseToiQ2FsaWJyaSIsc2Fucy1zZXJpZjt9CnNwYW4uRW1haWxTdHlsZTE3Cgl7bXNvLXN0eWxlLXR5cGU6cGVyc29uYWwtY29tcG9zZTsKCWZvbnQtZmFtaWx5OiJDYWxpYnJpIixzYW5zLXNlcmlmOwoJY29sb3I6d2luZG93dGV4dDt9Ci5Nc29DaHBEZWZhdWx0Cgl7bXNvLXN0eWxlLXR5cGU6ZXhwb3J0LW9ubHk7Cglmb250LWZhbWlseToiQ2FsaWJyaSIsc2Fucy1zZXJpZjt9CkBwYWdlIFdvcmRTZWN0aW9uMQoJe3NpemU6OC41aW4gMTEuMGluOwoJbWFyZ2luOjEuMGluIDEuMGluIDEuMGluIDEuMGluO30KZGl2LldvcmRTZWN0aW9uMQoJe3BhZ2U6V29yZFNlY3Rpb24xO30KLS0+PC9zdHlsZT48L2hlYWQ+PGJvZHkgbGFuZz0zREVOLVVTIGxpbms9M0QiIzA1NjNDMSIgdmxpbms9M0QiIzk1NEY3MiI+PGRpdiBjbGFzPQpzPTNEV29yZFNlY3Rpb24xPjxwIGNsYXNzPTNETXNvTm9ybWFsPkhlbGxvIFRhbnlhPG86cD48L286cD48L3A+PC9kaXY+PC9ib2R5PjwvaD0KdG1sPgoKLS1CXzM2NzcyMjY1NjJfMTc5MTg3MzAyNC0tCg==\n          </t:Data>\n        </t:Item>\n      </m:Items>\n    </m:UploadItems>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set('itemId', 'Item not found');",
+									"pm.environment.set('itemChangeKey', 'Item not found');",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateItem MessageDisposition=\"SendAndSaveCopy\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <SavedItemFolderId>\n        <t:DistinguishedFolderId Id=\"drafts\" />\n      </SavedItemFolderId>\n      <Items>\n        <t:Message>\n          <t:ItemClass>IPM.Note</t:ItemClass>\n          <t:Subject>Project Action</t:Subject>\n          <t:Body BodyType=\"HTML\">&lt;html dir=\"ltr\"&gt;&lt;html&gt;</t:Body>\n          <t:ToRecipients>\n            <t:Mailbox>\n              <t:EmailAddress>sschmidt@example.com</t:EmailAddress>\n            </t:Mailbox>\n          </t:ToRecipients>\n          <t:IsRead>false</t:IsRead>\n        </t:Message>\n      </Items>\n    </CreateItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SendItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:SendItemResponse\"][\"m:ResponseMessages\"][\"m:SendItemResponseMessage\"];",
+									"",
+									"    // pm.expect(responseMessage[\"0\"][\"m:ResponseCode\"]).to.equal(\"ErrorInvalidItemForOperationSendItem\");",
+									"    // pm.expect(responseMessage[\"0\"][\"m:MessageText\"]).to.include(\"No draft email\");",
+									"    pm.expect(responseMessage[\"0\"][\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    pm.expect(responseMessage[\"1\"][\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"SendItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" \n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SendItem xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\" \n              SaveItemToFolder=\"true\">\n      <ItemIds>\n        <t:ItemId Id=\"{{messageTestItemId}}\" ChangeKey=\"{{messageTestItemChangeKey}}\"/>\n        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemIdChangeKey}}\" />\n      </ItemIds>\n    </SendItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cleanup MessageTestItemId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Cleanup MessageTestItemId\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{messageTestItemId}}\" ChangeKey=\"{{messageTestItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    console.log(\"GetItem responseMessage\");",
+									"    console.log(responseMessage);",
+									"",
+									"    console.log(\"eql\" + responseMessage[\"m:ResponseCode\"]);",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    var itemSubject = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Subject\"];",
+									"    pm.expect(itemSubject).to.equal(\"Project Action\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"GetItem\");   ",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <GetItem\n      xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n      xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n        <t:IncludeMimeContent>true</t:IncludeMimeContent>\n      </ItemShape>\n      <ItemIds>\n        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </GetItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+									"    ",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    ",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.be.equal(pm.environment.get('itemId'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" \n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <UpdateItem MessageDisposition=\"SaveOnly\" ConflictResolution=\"AutoResolve\" \n                xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemChanges>\n        <t:ItemChange>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n          <t:Updates>\n            <t:SetItemField>\n              <t:FieldURI FieldURI=\"item:Sensitivity\"/>\n              <t:Message>\n                <t:Sensitivity>Normal</t:Sensitivity>\n              </t:Message>\n            </t:SetItemField>\n          </t:Updates>\n        </t:ItemChange>\n      </ItemChanges>\n    </UpdateItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MoveItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const $ = cheerio.load(responseBody)",
+									"pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+									"pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:MoveItemResponse\"][\"m:ResponseMessages\"][\"m:MoveItemResponseMessage\"];",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"MoveItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\nxmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\nxmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\nxmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <MoveItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <ToFolderId>\n        <t:DistinguishedFolderId Id=\"inbox\"/>\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </MoveItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CopyItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CopyItemResponse\"][\"m:ResponseMessages\"][\"m:CopyItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('copiedItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('copiedItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CopyItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CopyItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:DistinguishedFolderId Id=\"inbox\"/>\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </CopyItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MarkAsJunk",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// const $ = cheerio.load(responseBody)",
+									"// pm.environment.set('itemId', $('m\\\\:MovedItemId').attr('id'))",
+									"// pm.environment.set('itemChangeKey', $('m\\\\:MovedItemId').attr('changekey'))",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:MarkAsJunkResponse\"][\"m:ResponseMessages\"][\"m:MarkAsJunkResponseMessage\"];",
+									"",
+									"    //Junk is not supported by Keep yet...Junk folder won't be found",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"MarkAsJunk\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\" \n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2013\" />\n    </soap:Header>\n    <soap:Body>\n        <m:MarkAsJunk IsJunk=\"true\" MoveItem=\"true\">\n            <m:ItemIds>\n\t        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n            </m:ItemIds>\n        </m:MarkAsJunk>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ReportMessage",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:ReportMessageResponse\"][\"m:ResponseMessages\"][\"m:ReportMessageResponseMessage\"];",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    pm.expect(responseMessage[\"m:MovedItemId\"][\"$\"][\"Id\"]).to.be.equal(pm.environment.get('copiedItemId'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"ReportMessage\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\" \n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2013\" />\n   </soap:Header>\n   <soap:Body>\n      <m:ReportMessage>\n    \t<m:ItemIds>\n        \t<t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n    \t</m:ItemIds>\n      </m:ReportMessage>\n   </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cleanup CopiedItemId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									" "
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Cleanup CopiedItemId\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ArchiveItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:ArchiveItemResponse\"][\"m:ResponseMessages\"][\"m:ArchiveItemResponseMessage\"];",
+									"",
+									"    // Archive is not enabled for Ernie",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"ErrorArchiveMailboxNotEnabled\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"ArchiveItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2013\"/>\n   </soap:Header>\n   <soap:Body>\n      <m:ArchiveItem>\n         <m:ArchiveSourceFolderId>\n            <t:DistinguishedFolderId Id=\"inbox\"/>\n         </m:ArchiveSourceFolderId>\n         <m:ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n         </m:ItemIds>\n      </m:ArchiveItem>\n   </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cleanup ItemId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Cleanup ItemId\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem for Delete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"    ",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('deleteItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('deleteItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateItem for Delete\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateItem MessageDisposition=\"SendAndSaveCopy\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <SavedItemFolderId>\n        <t:DistinguishedFolderId Id=\"drafts\" />\n      </SavedItemFolderId>\n      <Items>\n        <t:Message>\n          <t:ItemClass>IPM.Note</t:ItemClass>\n          <t:Subject>Project Action</t:Subject>\n          <t:Body BodyType=\"HTML\">&lt;html dir=\"ltr\"&gt;&lt;html&gt;</t:Body>\n          <t:ToRecipients>\n            <t:Mailbox>\n              <t:EmailAddress>sschmidt@example.com</t:EmailAddress>\n            </t:Mailbox>\n          </t:ToRecipients>\n          <t:IsRead>false</t:IsRead>\n        </t:Message>\n      </Items>\n    </CreateItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteItem",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"DeleteItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{deleteItemId}}\" ChangeKey=\"{{deleteItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CleanUp Undeliverable EmailNotices",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"var soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+									"",
+									"var soapResponseMessageChanges = soapResponseMessage[\"m:Changes\"];",
+									"var soapResponseMessageCreate = soapResponseMessageChanges[\"t:Create\"];",
+									"var soapResponseMessageCreateMessage;",
+									"",
+									"//Iterating through the ItemId's of the undeliverable email notices.",
+									"var items = \"\";",
+									"if (soapResponseMessageCreate) {",
+									"    for(var i=0;i<soapResponseMessageCreate.length;i++){",
+									"        soapResponseMessageCreateSubject = soapResponseMessageCreate[i][\"t:Message\"] && soapResponseMessageCreate[i][\"t:Message\"][\"t:Subject\"];",
+									"",
+									"        //Checking for the subject of corresponding ItemId is equal to \"Hi\" or \"Project Action\"",
+									"        if(soapResponseMessageCreateSubject === \"Hi\" || soapResponseMessageCreateSubject === \"Project Action\") {",
+									"            soapResponseMessageCreateID = soapResponseMessageCreate[i][\"t:Message\"][\"t:ItemId\"].$.Id;",
+									"            items = items + `<t:ItemId Id=\"${soapResponseMessageCreateID}\"/>\\n`;",
+									"        }",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Undeliverable emails\",function(){",
+									"    pm.environment.set(\"emailItemId\",items);",
+									"})",
+									"",
+									"pm.test(\"Verify response\", function () {",
+									"        pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"        pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"        pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+									"        pm.environment.set(\"syncState\", soapResponseMessage[\"m:SyncState\"]);",
+									"        ",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CleanUp undeliverable messages\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:DistinguishedFolderId Id=\"inbox\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>1000</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "This test cleans-up the undeliverable email notices from the user's inbox"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete  Undeliverable EmailNotices",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    ",
+									"    pm.environment.unset(\"emailItemId\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"DeleteItem\");",
+									"let emailItemId = pm.environment.get(\"emailItemId\");",
+									"if (!emailItemId || emailItemId.length === 0) {",
+									"    pm.environment.set(\"emailItemId\", '<t:ItemId Id=\"\"/>');",
+									"}",
+									"          ",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          {{emailItemId}}\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "This test deletes the undeliverable email notices from user's inbox."
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteFolder MessageTest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteFolderResponse\"][\"m:ResponseMessages\"][\"m:DeleteFolderResponseMessage\"];",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"",
+									"    pm.environment.unset(\"messageTestFolderId\");",
+									"    pm.environment.unset(\"messageTestFolderChangeKey\");",
+									"    pm.environment.unset(\"messageTestItemId\");",
+									"    pm.environment.unset(\"messageTestItemChangeKey\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"copiedItemId\");",
+									"    pm.environment.unset(\"copiedItemChangeKey\");",
+									"    pm.environment.unset(\"deleteItemId\");",
+									"    pm.environment.unset(\"deleteItemChangeKey\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"DeleteFolder MessageTest\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        <t:FolderId Id=\"{{messageTestFolderId}}\" />\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Delegated message tests",
+			"item": [
+				{
+					"name": "GetFolder - get delegator inbox EWS Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+									"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+									"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+									"",
+									"const successString = \"Success\";",
+									"const property = \"t:FolderId\";",
+									"",
+									" pm.test(\"Test for get inbox folder. Should returns EWS Id for inbox folder.\", function () {",
+									"    const soapString = JSON.stringify(soapGetFolderResponseMessage);",
+									"",
+									"    pm.expect(soapString).to.include(successString);",
+									"    pm.expect(soapString).to.include(property);",
+									"",
+									"    const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+									"    const folder = folders[\"t:Folder\"];",
+									"    pm.environment.set(\"inboxEWSId\", folder[\"t:FolderId\"].$.Id);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//After adding the API delegation, replace it with real delegator email",
+									"pm.environment.set(\"delegatorEmail\", pm.environment.get(\"email\"));",
+									"",
+									"console.log(\"GetFolder Delegated message tests\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:DistinguishedFolderId Id=\"drafts\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Verify folder responses when BaseShape is Default."
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem - create message in delegator inbox",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set('itemId', 'Item not found');",
+									"pm.environment.set('itemChangeKey', 'Item not found');",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody);",
+									"",
+									"    pm.expect($('t\\\\:ParentFolderId').attr('id')).to.equal(pm.environment.get('inboxEWSId'));",
+									"",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'));",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateItem\");",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateItem MessageDisposition=\"SendAndSaveCopy\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <SavedItemFolderId>\n        <t:FolderId Id=\"{{inboxEWSId}}\" />\n      </SavedItemFolderId>\n      <Items>\n        <t:Message>\n          <t:ItemClass>IPM.Note</t:ItemClass>\n          <t:Subject>Shared message</t:Subject>\n          <t:Body BodyType=\"HTML\">&lt;html dir=\"ltr\"&gt;&lt;html&gt;</t:Body>\n          <t:ToRecipients>\n            <t:Mailbox>\n              <t:EmailAddress>sschmidt@example.com</t:EmailAddress>\n            </t:Mailbox>\n          </t:ToRecipients>\n          <t:IsRead>false</t:IsRead>\n        </t:Message>\n      </Items>\n    </CreateItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetItem - retrieve delegator message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    console.log(\"GetItem responseMessage\");",
+									"    console.log(responseMessage);",
+									"",
+									"    console.log(\"eql\" + responseMessage[\"m:ResponseCode\"]);",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const itemSubject = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Subject\"];",
+									"    pm.expect(itemSubject).to.equal(\"Shared message\");",
+									"",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.equal(pm.environment.get(\"itemId\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"GetItem\");   ",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');",
+									"//The item is created in the Inbox and displayed in drafts, the ID of the parent folder becomes drafts"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <GetItem\n      xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n      xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n        <t:IncludeMimeContent>true</t:IncludeMimeContent>\n      </ItemShape>\n      <ItemIds>\n        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </GetItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateItem - update delegator message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+									"    ",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    ",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.be.equal(pm.environment.get(\"itemId\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" \n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <UpdateItem MessageDisposition=\"SaveOnly\" ConflictResolution=\"AutoResolve\" \n                xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemChanges>\n        <t:ItemChange>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n          <t:Updates>\n            <t:SetItemField>\n              <t:FieldURI FieldURI=\"item:Sensitivity\"/>\n              <t:Message>\n                <t:Sensitivity>Normal</t:Sensitivity>\n              </t:Message>\n            </t:SetItemField>\n          </t:Updates>\n        </t:ItemChange>\n      </ItemChanges>\n    </UpdateItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CopyItem - copy message to delegator junk folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CopyItemResponse\"][\"m:ResponseMessages\"][\"m:CopyItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('copiedItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('copiedItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//can copy an utem only to a folder (drafts, sent are views)",
+									"console.log(\"CopyItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CopyItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:DistinguishedFolderId Id=\"junkemail\">\n            <t:Mailbox>\n                <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n            </t:Mailbox>\n        </t:DistinguishedFolderId>\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </CopyItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MoveItem - move copied message to delegator inbox",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:MoveItemResponse\"][\"m:ResponseMessages\"][\"m:MoveItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"MoveItem\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\nxmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\nxmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\nxmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <MoveItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <ToFolderId>\n        <t:DistinguishedFolderId Id=\"inbox\">\n            <t:Mailbox>\n                <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n            </t:Mailbox>\n        </t:DistinguishedFolderId>\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </MoveItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderItems for delegator inbox",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+									"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"const soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+									"",
+									"const soapResponseMessageChanges = soapResponseMessage[\"m:Changes\"];",
+									"const soapResponseMessageCreate = soapResponseMessageChanges[\"t:Create\"];",
+									"let soapResponseMessageCreateMessage;",
+									"",
+									"//Iterating through the ItemId's of the undeliverable email notices.",
+									"let items = \"\";",
+									"if (soapResponseMessageCreate) {",
+									"    for(let i = 0; i < soapResponseMessageCreate.length; i++) {",
+									"        const soapResponseMessageCreateID = soapResponseMessageCreate[i][\"t:Message\"][\"t:ItemId\"].$.Id;",
+									"",
+									"        const soapResponseMessageCreateSubject = soapResponseMessageCreate[i][\"t:Message\"][\"t:Subject\"];",
+									"",
+									"        //Checking for the subject of corresponding ItemId is equal to \"Hi\" or \"Shared message\"",
+									"        if(soapResponseMessageCreateSubject === \"Hi\" || soapResponseMessageCreateSubject === \"Shared message\") {",
+									"            items = items + `<t:ItemId Id=\"${soapResponseMessageCreateID}\"/>\\n`;",
+									"        }",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Verify response\", function () {",
+									"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"    pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"SyncFolderItems for Inbox folder\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:FolderId Id=\"{{inboxEWSId}}\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>1000</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "This test cleans-up the undeliverable email notices from the user's inbox"
+					},
+					"response": []
+				},
+				{
+					"name": "ReportMessage for delegator",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:ReportMessageResponse\"][\"m:ResponseMessages\"][\"m:ReportMessageResponseMessage\"];",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    pm.expect(responseMessage[\"m:MovedItemId\"][\"$\"][\"Id\"]).to.be.equal(pm.environment.get('copiedItemId'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"ReportMessage\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\" \n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2013\" />\n   </soap:Header>\n   <soap:Body>\n      <m:ReportMessage>\n    \t<m:ItemIds>\n        \t<t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n    \t</m:ItemIds>\n      </m:ReportMessage>\n   </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteItem - delete delegator messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    pm.environment.unset(\"delegatorEmail\");",
+									"    pm.environment.unset(\"inboxEWSId\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"copiedItemId\");",
+									"    pm.environment.unset(\"copiedItemChangeKey\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Delete itemId and copiedItemId\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n          <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		}
+	]
+}

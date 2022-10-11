@@ -1,0 +1,2307 @@
+{
+	"info": {
+		"_postman_id": "89233986-2b4d-45c3-b1ab-0d42484cf9c2",
+		"name": "ews",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "failure test",
+			"item": [
+				{
+					"name": "Invalid xml",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.have.status(500);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <Header>\n      <RequestServerVersion Version=\"Exchange2016\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\"/>\n   </Header>\n   <Body>\n      <GetUserPhoto xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n         <Email>leviastan@llqdev.onmicrosoft.com</Email>\n         <SizeRequested>HR48x48</SizeRequested>\n         <TypeRequested>UserPhoto</TypeRequested>\n      </GetUserPhoto\n   </Body>\n</Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid operation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.have.status(500);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <Header>\n      <RequestServerVersion Version=\"Exchange2016\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\"/>\n   </Header>\n   <Body>\n      <GetUserPhotoaaaa xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n         <Email>leviastan@llqdev.onmicrosoft.com</Email>\n         <SizeRequested>HR48x48</SizeRequested>\n         <TypeRequested>UserPhoto</TypeRequested>\n      </GetUserPhotoaaaa>\n   </Body>\n</Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error response",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    pm.expect(pm.response.text()).to.include(\"ErrorAccessDenied\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2016\" />\n  </soap:Header>\n  <soap:Body>\n    <m:GetUserOofSettingsRequest>\n      <t:Mailbox>\n        <t:Address>NotFound@tc.com</t:Address>\n      </t:Mailbox>\n    </m:GetUserOofSettingsRequest>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "autodiscover",
+			"item": [
+				{
+					"name": "GetDomainSettings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?> \n<soap:Envelope xmlns:a=\"https://schemas.microsoft.com/exchange/2010/Autodiscover\"\n               xmlns:wsa=\"http://www.w3.org/2005/08/addressing\"\n               xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"> \n    <soap:Header> \n        <a:RequestedServerVersion>Exchange2010</a:RequestedServerVersion>\n        <wsa:Action>https://schemas.microsoft.com/exchange/2010/Autodiscover/Autodiscover/GetDomainSettings</wsa:Action>\n        <wsa:To>https://autodiscover.exchange.microsoft.com/autodiscover/autodiscover.svc</wsa:To>\n    </soap:Header> \n    <soap:Body> \n        <a:GetDomainSettingsRequestMessage>\n            <a:Request> \n                <a:Domains> \n                    <a:Domain>contoso.com</a:Domain> \n                </a:Domains> \n                <a:RequestedSettings> \n                    <a:Setting>ExternalEwsUrl</a:Setting> \n                </a:RequestedSettings> \n            </a:Request> \n        </a:GetDomainSettingsRequestMessage> \n    </soap:Body> \n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/autodiscover/autodiscover.svc",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"autodiscover",
+								"autodiscover.svc"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetUserSettings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:a=\"https://schemas.microsoft.com/exchange/2010/Autodiscover\"      \n               xmlns:wsa=\"http://www.w3.org/2005/08/addressing\" \n               xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"      \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Header>\n    <a:RequestedServerVersion>Exchange2010</a:RequestedServerVersion>\n    <wsa:Action>https://schemas.microsoft.com/exchange/2010/Autodiscover/Autodiscover/GetUserSettings</wsa:Action>\n    <wsa:To>https://myserver.contoso.com/autodiscover/autodiscover.svc</wsa:To>\n  </soap:Header>\n  <soap:Body>\n    <a:GetUserSettingsRequestMessage xmlns:a=\"https://schemas.microsoft.com/exchange/2010/Autodiscover\">\n      <a:Request>\n        <a:Users>\n          <a:User>\n            <a:Mailbox>UserName@domain.contoso.com</a:Mailbox>\n          </a:User>\n        </a:Users>\n        <a:RequestedSettings>\n          <a:Setting>UserDisplayName</a:Setting>\n          <a:Setting>EwsSupportedSchemas</a:Setting>\n          <a:Setting>ExternalEwsUrl</a:Setting>\n        </a:RequestedSettings>\n      </a:Request>\n    </a:GetUserSettingsRequestMessage>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/autodiscover/autodiscover.svc",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"autodiscover",
+								"autodiscover.svc"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POX autodiscover",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Autodiscover\n    xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006\">\n    <Request>\n        <EMailAddress>test@65744797.ngrok.io</EMailAddress>\n        <AcceptableResponseSchema>http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a</AcceptableResponseSchema>\n    </Request>\n</Autodiscover>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/autodiscover/autodiscover.xml",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"autodiscover",
+								"autodiscover.xml"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CopyItem",
+			"item": [
+				{
+					"name": "Get folders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the folderId of the contacts folder to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+									"",
+									"    ",
+									"    pm.expect(Array.isArray(responseMessage));",
+									"    for (const message of responseMessage) {",
+									"        pm.expect(message[\"m:ResponseCode\"], `Bad response for ${message}`).to.equal(\"NoError\");",
+									"        ",
+									"        if (message[\"m:Folders\"][\"t:ContactsFolder\"]) {",
+									"            pm.environment.set(\"contactsFolderId\", message[\"m:Folders\"][\"t:ContactsFolder\"][\"t:FolderId\"][\"$\"][\"Id\"]);",
+									"        }",
+									"        else if (message[\"m:Folders\"][\"t:CalendarFolder\"]) {",
+									"            pm.environment.set(\"calendarFolderId\", message[\"m:Folders\"][\"t:CalendarFolder\"][\"t:FolderId\"][\"$\"][\"Id\"]);",
+									"        }",
+									"        else if (message[\"m:Folders\"][\"t:TasksFolder\"]) {",
+									"            pm.environment.set(\"tasksFolderId\", message[\"m:Folders\"][\"t:TasksFolder\"][\"t:FolderId\"][\"$\"][\"Id\"]);",
+									"        }",
+									"        else if (message[\"m:Folders\"][\"t:Folder\"]) {",
+									"            pm.environment.set(\"notesFolderId\", message[\"m:Folders\"][\"t:Folder\"][\"t:FolderId\"][\"$\"][\"Id\"]);",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); "
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"contacts\"></t:DistinguishedFolderId>\n                <t:DistinguishedFolderId Id=\"notes\"></t:DistinguishedFolderId>\n                <t:DistinguishedFolderId Id=\"calendar\"></t:DistinguishedFolderId>\n                <t:DistinguishedFolderId Id=\"tasks\"></t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetFolder request in order to get the folderId of the contacts folder to be used when creating a contact"
+					},
+					"response": []
+				},
+				{
+					"name": "CreateFolder CopyItem Tests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateFolderResponse\"][\"m:ResponseMessages\"][\"m:CreateFolderResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var folderId = responseMessage[\"m:Folders\"][\"t:Folder\"][\"t:FolderId\"][\"$\"];",
+									"    pm.environment.set(\"messageTestFolderId\", folderId[\"Id\"])",
+									"    pm.environment.set(\"messageTestFolderChangeKey\", folderId[\"ChangeKey\"])",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); "
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n      xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ParentFolderId>\n        <t:DistinguishedFolderId Id=\"msgfolderroot\"/>\n      </ParentFolderId>\n      <Folders>\n        <t:Folder>\n          <t:DisplayName>CopyItemTest</t:DisplayName>\n        </t:Folder>\n      </Folders>\n    </CreateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem for Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); ",
+									"",
+									"const from = pm.environment.get('email');",
+									"const to = pm.environment.get('email');",
+									"// Create a message with an attachment",
+									"const mime = `From: ${from}",
+									"Content-Type: multipart/mixed;",
+									"\tboundary=\"Apple-Mail=_1495F1FE-BE5A-4460-9766-A0D862091FF9\"",
+									"Mime-Version: 1.0 (Mac OS X Mail 13.4 \\(3608.120.23.2.7\\))",
+									"Subject: Acceptance Test Message with Attachment",
+									"X-Universally-Unique-Identifier: 99303F95-A338-4A4C-B4DA-FE1027C4AC6D",
+									"Message-Id: <AEB3B12D-FC90-4DF2-BFB2-38F7872091A2@bfc1b861dd74.ngrok.io>",
+									"Date: Mon, 14 Jun 2021 10:23:17 -0400",
+									"To: ${to}",
+									"",
+									"",
+									"--Apple-Mail=_1495F1FE-BE5A-4460-9766-A0D862091FF9",
+									"Content-Transfer-Encoding: 7bit",
+									"Content-Type: text/plain;",
+									"\tcharset=us-ascii",
+									"",
+									"This is for acceptance test.",
+									"--Apple-Mail=_1495F1FE-BE5A-4460-9766-A0D862091FF9",
+									"Content-Disposition: attachment;",
+									"\tfilename=EWSContact.txt",
+									"Content-Type: text/plain;",
+									"\tx-unix-mode=0644;",
+									"\tname=\"EWSContact.txt\"",
+									"Content-Transfer-Encoding: quoted-printable",
+									"",
+									"<t:Contact>",
+									"<t:ItemId Id=3D\"14CA9337B4C3786F0025864100760BAA\" =",
+									"ChangeKey=3D\"ck-14CA9337B4C3786F0025864100760BAA\"/>",
+									"<t:Body BodyType=3D\"Text\"/>",
+									"<t:HasAttachments>false</t:HasAttachments>",
+									"<t:Culture>en-US</t:Culture>",
+									"<t:FileAs>Jane Thomas</t:FileAs>",
+									"<t:FileAsMapping>FirstSpaceLast</t:FileAsMapping>",
+									"<t:DisplayName>Jane Thomas</t:DisplayName>",
+									"<t:GivenName>Jane</t:GivenName>",
+									"<t:CompleteName>",
+									"<t:FirstName>Jane</t:FirstName>",
+									"<t:LastName>Thomas</t:LastName>",
+									"<t:FullName>Jane Thomas</t:FullName>",
+									"</t:CompleteName>",
+									"<t:EmailAddresses>",
+									"<t:Entry Key=3D\"EmailAddress1\">jane.thomas@work.com</t:Entry>",
+									"<t:Entry Key=3D\"EmailAddress2\">jane.thomas@home.com</t:Entry>",
+									"<t:Entry Key=3D\"EmailAddress3\">janet.thomas@work2.com</t:Entry>",
+									"</t:EmailAddresses>",
+									"<t:PhysicalAddresses>",
+									"<t:Entry Key=3D\"Business\">",
+									"<t:Street/>",
+									"<t:City/>",
+									"<t:State/>",
+									"<t:CountryOrRegion/>",
+									"<t:PostalCode/>",
+									"</t:Entry>",
+									"<t:Entry Key=3D\"Home\">",
+									"<t:Street/>",
+									"<t:City/>",
+									"<t:State/>",
+									"<t:CountryOrRegion/>",
+									"<t:PostalCode/>",
+									"</t:Entry>",
+									"<t:Entry Key=3D\"Other\">",
+									"<t:Street/>",
+									"<t:City/>",
+									"<t:State/>",
+									"<t:CountryOrRegion/>",
+									"<t:PostalCode/>",
+									"</t:Entry>",
+									"</t:PhysicalAddresses>",
+									"<t:Surname>Thomas</t:Surname>",
+									"</t:Contact>=",
+									"",
+									"--Apple-Mail=_1495F1FE-BE5A-4460-9766-A0D862091FF9--",
+									"`;",
+									"const base64String = Buffer.from(mime).toString('base64');",
+									"pm.environment.set('BASE64_MESSAGE', base64String);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:Items>\n                <t:Message>\n                    <t:MimeContent>{{BASE64_MESSAGE}}</t:MimeContent>\n                    <t:Importance>Normal</t:Importance>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyName=\"MessageNotJunkFlag\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"Boolean\"/>\n                        <t:Value>true</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyTag=\"0xe07\" PropertyType=\"Integer\"/>\n                        <t:Value>1</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyTag=\"0x1090\" PropertyType=\"Integer\"/>\n                        <t:Value>0</t:Value>\n                    </t:ExtendedProperty>\n                </t:Message>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CopyItem for Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CopyItemResponse\"][\"m:ResponseMessages\"][\"m:CopyItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('copiedItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('copiedItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); ",
+									"pm.expect(pm.environment.get(\"messageTestFolderId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"messageTestFolderChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CopyItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:FolderId Id=\"{{messageTestFolderId}}\" ChangeKey=\"{{messageTestFolderChangeKey}}\" />\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </CopyItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify message copied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    var parentFolderId = responseMessage[\"m:Items\"][\"t:Message\"][\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get('messageTestFolderId'))",
+									"    var itemSubject = responseMessage[\"m:Items\"][\"t:Message\"][\"t:Subject\"];",
+									"    pm.expect(itemSubject).to.equal(\"Acceptance Test Message with Attachment\");",
+									"    var hasAttachments = responseMessage[\"m:Items\"][\"t:Message\"][\"t:HasAttachments\"];",
+									"    pm.expect(hasAttachments).to.equal(\"true\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"copiedItemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <GetItem\n      xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n      xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n        <t:IncludeMimeContent>true</t:IncludeMimeContent>\n      </ItemShape>\n      <ItemIds>\n        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </GetItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(Array.isArray(responseMessage)).to.be.true;",
+									"    pm.expect(responseMessage.length).to.equal(2); ",
+									"    responseMessage.forEach(message => {",
+									"        pm.expect(message[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    });",
+									"    ",
+									"    pm.environment.unset(\"copiedItemId\");",
+									"    pm.environment.unset(\"copiedItemChangeKey\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"BASE64_MESSAGE\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"copiedItemChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Body>\n        <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemIds>\n                <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n                <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n            </ItemIds>\n        </DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem for Contact",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the newly created contact's itemId and itemChangeKey to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);",
+									"pm.expect(pm.environment.get(\"contactsFolderId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{contactsFolderId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:Contact>\n                    <t:FileAsMapping>LastCommaFirst</t:FileAsMapping>\n                    <t:DisplayName>Fozzy Bear</t:DisplayName>\n                    <t:GivenName>Fozzy</t:GivenName>\n                    <t:Surname>Bear</t:Surname>\n                    <t:CompanyName>HCL</t:CompanyName>\n                    <t:EmailAddresses>\n                        <t:Entry Key=\"EmailAddress1\">fozzy.bear@fakemail.com</t:Entry>\n                    </t:EmailAddresses>\n                    <t:PhoneNumbers>\n                        <t:Entry Key=\"MobilePhone\">9195551212</t:Entry>\n                    </t:PhoneNumbers>\n                    <t:PhysicalAddresses>\n                        <t:Entry Key=\"Home\">\n                            <t:Street>1313 Mockingbird Ln</t:Street>\n                            <t:City>Anytown</t:City>\n                            <t:State>NC</t:State>\n                            <t:PostalCode>27613</t:PostalCode>\n                        </t:Entry>\n                    </t:PhysicalAddresses>\n                </t:Contact>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS CreateItem request for creating a contact"
+					},
+					"response": []
+				},
+				{
+					"name": "CopyItem for Contact",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CopyItemResponse\"][\"m:ResponseMessages\"][\"m:CopyItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('copiedItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('copiedItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); ",
+									"pm.expect(pm.environment.get(\"messageTestFolderId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"messageTestFolderChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CopyItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:FolderId Id=\"{{messageTestFolderId}}\" ChangeKey=\"{{messageTestFolderChangeKey}}\" />\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </CopyItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Contact copied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    var contact = responseMessage[\"m:Items\"][\"t:Contact\"];",
+									"    var parentFolderId = contact[\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get('messageTestFolderId'))",
+									"    var company = contact[\"t:CompanyName\"];",
+									"    pm.expect(company).to.equal(\"HCL\");",
+									"    var first = contact[\"t:CompleteName\"][\"t:FirstName\"];",
+									"    pm.expect(first).to.equal(\"Fozzy\");",
+									"",
+									"    pm.expect(contact[\"t:PhysicalAddresses\"], \"Address missing\").to.not.be.undefined;",
+									"    pm.expect(contact[\"t:EmailAddresses\"], \"Email missing\").to.not.be.undefined;",
+									"    pm.expect(contact[\"t:PhoneNumbers\"], \"Phone missing\").to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"copiedItemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n  xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <GetItem\n      xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n      xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n        <t:IncludeMimeContent>true</t:IncludeMimeContent>\n      </ItemShape>\n      <ItemIds>\n        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </GetItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Contacts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(Array.isArray(responseMessage)).to.be.true;",
+									"    pm.expect(responseMessage.length).to.equal(2); ",
+									"    responseMessage.forEach(message => {",
+									"        pm.expect(message[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    });",
+									"    ",
+									"    pm.environment.unset(\"copiedItemId\");",
+									"    pm.environment.unset(\"copiedItemChangeKey\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"copiedItemChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem for Note",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the newly created note's itemId and itemChangeKey to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									"pm.test(\"Verify create response body\", function() {",
+									"    // Parse our the itemId and itemChangeKey and save them to the environment",
+									"    const $ = cheerio.load(responseBody);",
+									"    const itemId = $('t\\\\:ItemId').attr('id');",
+									"    pm.expect(itemId).to.be.a('string');",
+									"    const itemChangeKey = $('t\\\\:ItemId').attr('changekey');",
+									"    pm.expect(itemChangeKey).to.be.a('string');",
+									"",
+									"    pm.environment.set('itemId', itemId);",
+									"    pm.environment.set('itemChangeKey', itemChangeKey);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"notesFolderId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{notesFolderId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:Item>\n                    <t:ItemClass>IPM.StickyNote</t:ItemClass>\n                    <t:Subject>New Note</t:Subject>\n                    <t:Body BodyType=\"HTML\">&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body&gt;Test for Automation&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;ul class=\"Apple-dash-list\"&gt;&lt;li&gt;item 1&lt;/li&gt;&lt;li&gt;item 2&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</t:Body>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35584\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>3</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35586\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>200</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35587\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>166</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35588\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>110</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI PropertyId=\"35589\" PropertySetId=\"0006200E-0000-0000-c000-000000000046\" PropertyType=\"Integer\"/>\n                        <t:Value>110</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34064\" PropertyType=\"Integer\"/>\n                        <t:Value>272</t:Value>\n                    </t:ExtendedProperty>\n                </t:Item>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS CreateItem request for creating a note"
+					},
+					"response": []
+				},
+				{
+					"name": "CopyItem for note",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CopyItemResponse\"][\"m:ResponseMessages\"][\"m:CopyItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('copiedItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('copiedItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); ",
+									"pm.expect(pm.environment.get(\"messageTestFolderId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"messageTestFolderChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CopyItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:FolderId Id=\"{{messageTestFolderId}}\" ChangeKey=\"{{messageTestFolderChangeKey}}\" />\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </CopyItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Note copied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonObject = xml2Json(responseBody);",
+									"const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									"pm.test(\"Verify updated response body for note\", function() {",
+									"    const message = responseMessage[\"m:Items\"][\"t:Message\"];",
+									"    // Parent folder",
+									"    var parentFolderId = message[\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get('messageTestFolderId'))",
+									"",
+									"    // Item class",
+									"    pm.expect(message[\"t:ItemClass\"]).to.equal(\"IPM.StickyNote\");",
+									"",
+									"    // Subject",
+									"    const itemSubject = message[\"t:Subject\"];",
+									"    pm.expect(itemSubject).to.equal(\"New Note\");",
+									"",
+									"    // Body",
+									"    const itemStatus = message[\"t:Body\"][\"_\"];",
+									"    pm.expect(itemStatus).to.equal('<html><head></head><body>Test for Automation<div><br></div><div><ul class=\"Apple-dash-list\"><li>item 1</li><li>item 2</li></ul></div></body></html>');",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"",
+									"// Verify that the itemId of the note is set in the enviroonment",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{copiedItemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetItem request for fetching a note after it has been updated"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Notes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(Array.isArray(responseMessage)).to.be.true;",
+									"    pm.expect(responseMessage.length).to.equal(2); ",
+									"    responseMessage.forEach(message => {",
+									"        pm.expect(message[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    });",
+									"    ",
+									"    pm.environment.unset(\"copiedItemId\");",
+									"    pm.environment.unset(\"copiedItemChangeKey\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"copiedItemChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem for Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the newly created task's itemId and itemChangeKey to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody);",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'));",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"",
+									"// Verify that the taskFolderId environment variable is set.",
+									"pm.expect(pm.environment.get(\"tasksFolderId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"V2016_04_13\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <CreateItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\" MessageDisposition=\"SaveOnly\">\n            <SavedItemFolderId>\n                <t:FolderId Id=\"{{tasksFolderId}}\"/>\n            </SavedItemFolderId>\n            <Items>\n                <t:Task>\n                    <t:Subject>Test Task</t:Subject>\n                    <t:Sensitivity>Normal</t:Sensitivity>\n                    <t:Body BodyType=\"HTML\">&lt;html\n                        xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;\n                        xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;\n                        xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;\n                        xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;&lt;head&gt;&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=utf-8&quot;&gt;&lt;meta name=Generator content=&quot;Microsoft Word 15 (filtered medium)&quot;&gt;&lt;style&gt;&lt;!--\n/* Font Definitions */\n@font-face\n\t{font-family:&quot;Cambria Math&quot;;\n\tpanose-1:2 4 5 3 5 4 6 3 2 4;}\n@font-face\n\t{font-family:Calibri;\n\tpanose-1:2 15 5 2 2 2 4 3 2 4;}\n/* Style Definitions */\np.MsoNormal, li.MsoNormal, div.MsoNormal\n\t{margin:0in;\n\tfont-size:11.0pt;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\nspan.EmailStyle17\n\t{mso-style-type:personal-compose;\n\tfont-family:&quot;Calibri&quot;,sans-serif;\n\tcolor:windowtext;}\n.MsoChpDefault\n\t{mso-style-type:export-only;\n\tfont-family:&quot;Calibri&quot;,sans-serif;}\n@page WordSection1\n\t{size:8.5in 11.0in;\n\tmargin:1.0in 1.0in 1.0in 1.0in;}\ndiv.WordSection1\n\t{page:WordSection1;}\n--&gt;&lt;/style&gt;&lt;/head&gt;&lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style=&apos;word-wrap:break-word&apos;&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;This is a test task&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;\n                    </t:Body>\n                    <t:Importance>Normal</t:Importance>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:ExtendedProperty>\n                        <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33031\" PropertyType=\"Boolean\"/>\n                        <t:Value>false</t:Value>\n                    </t:ExtendedProperty>\n                    <t:DueDate>2020-10-27T11:59:00Z</t:DueDate>\n                </t:Task>\n            </Items>\n        </CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS CreateItem request for creating a task"
+					},
+					"response": []
+				},
+				{
+					"name": "CopyItem for task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CopyItemResponse\"][\"m:ResponseMessages\"][\"m:CopyItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('copiedItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('copiedItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); ",
+									"pm.expect(pm.environment.get(\"messageTestFolderId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"messageTestFolderChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CopyItem xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ToFolderId>\n        <t:FolderId Id=\"{{messageTestFolderId}}\" ChangeKey=\"{{messageTestFolderChangeKey}}\" />\n      </ToFolderId>\n      <ItemIds>\n\t        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n      </ItemIds>\n    </CopyItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Task copied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonObject = xml2Json(responseBody);",
+									"const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});",
+									"",
+									"pm.test(\"Verify updated response body for note\", function() {",
+									"    const task = responseMessage[\"m:Items\"][\"t:Task\"];",
+									"    // Parent folder",
+									"    var parentFolderId = task[\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get('messageTestFolderId'))",
+									"",
+									"    // Item class",
+									"    pm.expect(task[\"t:ItemClass\"]).to.equal(\"IPM.Task\");",
+									"",
+									"    // Subject",
+									"    const itemSubject = task[\"t:Subject\"];",
+									"    pm.expect(itemSubject).to.equal(\"Test Task\");",
+									"",
+									"    // Body",
+									"    const itemBody = task[\"t:Body\"][\"_\"];",
+									"    pm.expect(itemBody).to.equal('This is a test task');",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"",
+									"// Verify that the itemId of the note is set in the enviroonment",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetItem\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <ItemShape>\n                <t:BaseShape>Default</t:BaseShape>\n                <t:BodyType>Text</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                    <t:FieldURI FieldURI=\"item:Body\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <ItemIds>\n                <t:ItemId Id=\"{{copiedItemId}}\"/>\n            </ItemIds>\n        </GetItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetItem request for fetching a note after it has been updated"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(Array.isArray(responseMessage)).to.be.true;",
+									"    pm.expect(responseMessage.length).to.equal(2); ",
+									"    responseMessage.forEach(message => {",
+									"        pm.expect(message[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    });",
+									"    ",
+									"    pm.environment.unset(\"copiedItemId\");",
+									"    pm.environment.unset(\"copiedItemChangeKey\");",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName);    ",
+									"pm.expect(pm.environment.get(\"copiedItemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"copiedItemChangeKey\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n        <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\" />\n        <t:ItemId Id=\"{{copiedItemId}}\" ChangeKey=\"{{copiedItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteFolder CopyItem Tests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteFolderResponse\"][\"m:ResponseMessages\"][\"m:DeleteFolderResponseMessage\"];",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    pm.environment.unset(\"messageTestFolderId\");",
+									"    pm.environment.unset(\"messageTestFolderChangeKey\");",
+									"",
+									"    // Cleanup from Get folders",
+									"    pm.environment.unset(\"contactsFolderId\");",
+									"    pm.environment.unset(\"calendarFolderId\");",
+									"    pm.environment.unset(\"tasksFolderId\");",
+									"    pm.environment.unset(\"notesFolderId\");",
+									"",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Running: \"+ pm.info.requestName); ",
+									"pm.expect(pm.environment.get(\"messageTestFolderId\")).to.be.a('string');",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        <t:FolderId Id=\"{{messageTestFolderId}}\" />\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "CopyItem test for all item types"
+		},
+		{
+			"name": "GetUserPhoto",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <Header>\n      <RequestServerVersion Version=\"Exchange2016\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\"/>\n   </Header>\n   <Body>\n      <GetUserPhoto xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n         <Email>leviastan@llqdev.onmicrosoft.com</Email>\n         <SizeRequested>HR48x48</SizeRequested>\n         <TypeRequested>UserPhoto</TypeRequested>\n      </GetUserPhoto>\n   </Body>\n</Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "SetUserPhoto",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"// TODO:  Remove this when LABS-729 is fixed to re-enable the GetUserOofSettings test",
+							"postman.setNextRequest(\"SetUserOofSettings\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <Header>\n      <RequestServerVersion Version=\"Exchange2016\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\"/>\n   </Header>\n   <Body>\n      <SetUserPhoto xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n         <Email>leviastan@llqdev.onmicrosoft.com</Email>\n         <Content>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</Content>\n         <TypeRequested>UserPhoto</TypeRequested>\n      </SetUserPhoto>\n   </Body>\n</Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FAILS (LABS-792) GetUserOofSettings",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2016\"/>\n  </soap:Header>\n  <soap:Body>\n    <m:GetUserOofSettingsRequest>\n      <t:Mailbox>\n        <t:Address>{{email}}</t:Address>\n      </t:Mailbox>\n    </m:GetUserOofSettingsRequest>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "TODO:  Remove the postman.setNextRequest() call in the SetUserPhoto test to re-enable this test once LABS-792 is fixed."
+			},
+			"response": []
+		},
+		{
+			"name": "SetUserOofSettings",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Header>\n      <RequestServerVersion Version=\"Exchange2016\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\"/>\n  </soap:Header>\n  <soap:Body>\n    <SetUserOofSettingsRequest xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <Mailbox xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n        <Name>leviastan</Name>\n        <Address>leviastan@llqdev.onmicrosoft.com</Address>\n        <RoutingType>SMTP</RoutingType>\n      </Mailbox>\n      <UserOofSettings xmlns=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n        <OofState>Enabled</OofState>\n        <ExternalAudience>All</ExternalAudience>\n        <Duration>\n          <StartTime>aasdf</StartTime>\n          <EndTime>2006-10-25T12:12:00Z</EndTime>\n        </Duration>\n        <InternalReply>\n          <Message>I am out of office.  This is my internal reply.</Message>\n        </InternalReply>\n        <ExternalReply xml:lang=\"zh\">\n          <Message>I am out of office. This is my external reply.</Message>\n        </ExternalReply>\n        <EventsToDeleteIDs>\n        \t<EventToDeleteID>AAAAA==</EventToDeleteID>\n        \t<EventToDeleteID>BBBBB==</EventToDeleteID>\n        </EventsToDeleteIDs>\n      </UserOofSettings>\n    </SetUserOofSettingsRequest>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetUserAvailability",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2016\"/>\n  </soap:Header>\n  <soap:Body>\n    <GetUserAvailabilityRequest xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n                xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n      <t:TimeZone xmlns=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n        <Bias>480</Bias>\n        <StandardTime>\n          <Bias>0</Bias>\n          <Time>02:00:00</Time>\n          <DayOrder>5</DayOrder>\n          <Month>10</Month>\n          <DayOfWeek>Sunday</DayOfWeek>\n        </StandardTime>\n        <DaylightTime>\n          <Bias>-60</Bias>\n          <Time>02:00:00</Time>\n          <DayOrder>1</DayOrder>\n          <Month>4</Month>\n          <DayOfWeek>Sunday</DayOfWeek>\n        </DaylightTime>\n      </t:TimeZone>\n      <MailboxDataArray>\n        <t:MailboxData>\n          <t:Email>\n            <t:Address>user1@example.com</t:Address>\n          </t:Email>\n          <t:AttendeeType>Required</t:AttendeeType>\n          <t:ExcludeConflicts>false</t:ExcludeConflicts>\n        </t:MailboxData>\n        <t:MailboxData>\n          <t:Email>\n            <t:Address>user2@example.com</t:Address>\n          </t:Email>\n          <t:AttendeeType>Required</t:AttendeeType>\n          <t:ExcludeConflicts>false</t:ExcludeConflicts>\n        </t:MailboxData>\n      </MailboxDataArray>\n      <t:FreeBusyViewOptions>\n        <t:TimeWindow>\n          <t:StartTime>2006-10-16T00:00:00</t:StartTime>\n          <t:EndTime>2006-10-16T23:59:59</t:EndTime>\n        </t:TimeWindow>\n        <t:MergedFreeBusyIntervalInMinutes>60</t:MergedFreeBusyIntervalInMinutes>\n        <t:RequestedView>FreeBusy DetailedMerged</t:RequestedView>\n      </t:FreeBusyViewOptions>\n    </GetUserAvailabilityRequest>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetClientAccessToken",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2016\" />\n   </soap:Header>\n   <soap:Body>\n      <m:GetClientAccessToken>\n         <m:TokenRequests>\n            <t:TokenRequest>\n               <t:Id>1C50226D-04B5-4AB2-9FCD-42E236B59E4B</t:Id>\n               <t:TokenType>CallerIdentity</t:TokenType>\n            </t:TokenRequest>\n            <t:TokenRequest>\n               <t:Id>1C50226D-04B5-4AB2-9FCD-42E236B59E4B</t:Id>\n               <t:TokenType>ExtensionCallback</t:TokenType>\n            </t:TokenRequest>\n         </m:TokenRequests>\n      </m:GetClientAccessToken>\n   </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindPeople",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n   <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2016\" />\n   </soap:Header>\n   <soap:Body >\n    <m:FindPeople>\n      <m:PersonaShape>\n        <t:BaseShape>IdOnly</t:BaseShape>\n        <t:AdditionalProperties>\n          <t:FieldURI FieldURI=\"persona:DisplayName\"/>\n          <t:IndexedFieldURI FieldURI=\"persona:Title\" FieldIndex=\"ADAAA==\"/>\n        </t:AdditionalProperties>\n      </m:PersonaShape>\n      <m:IndexedPageItemView BasePoint=\"Beginning\" MaxEntriesReturned=\"100\" Offset=\"0\"/>\n      <m:ParentFolderId>\n        <t:DistinguishedFolderId Id=\"directory\"/>\n      </m:ParentFolderId>\n      <m:QueryString>query</m:QueryString>\n      <m:Restriction>\n      \t<t:Or>\n      \t\t<t:IsEqualTo>\n\t      \t\t<t:IndexedFieldURI FieldURI=\"persona:DisplayName\" FieldIndex=\"ADODS==\">\n\t      \t\t</t:IndexedFieldURI>\n      \t\t\t<t:FieldURIOrConstant>\n      \t\t\t\t<t:Constant Value=\"tom\"></t:Constant>\n      \t\t\t</t:FieldURIOrConstant>\n      \t\t</t:IsEqualTo>\n      \t\t<t:IsGreaterThan>\n\t      \t\t<t:IndexedFieldURI FieldURI=\"persona:DisplayName\" FieldIndex=\"ADODS==\">\n\t      \t\t</t:IndexedFieldURI>\n      \t\t\t<t:FieldURIOrConstant>\n      \t\t\t\t<t:Constant Value=\"111\"></t:Constant>\n      \t\t\t</t:FieldURIOrConstant>\n      \t\t</t:IsGreaterThan>\n\t      \t<t:Exists>\n\t      \t\t<t:IndexedFieldURI FieldURI=\"persona:DisplayName\" FieldIndex=\"ADODS==\">\n\t      \t\t</t:IndexedFieldURI>\n\t      \t</t:Exists>\n\t      \t<t:Not>\n\t\t      \t<t:Exists>\n\t\t      \t\t<t:IndexedFieldURI FieldURI=\"persona:DisplayName\" FieldIndex=\"JDSKS==\">\n\t\t      \t\t</t:IndexedFieldURI>\n\t\t      \t</t:Exists>\n\t      \t</t:Not>\n\t      \t<t:Near>\n\t      \t\t<t:Contains ContainmentMode=\"FullString\" ContainmentComparison=\"LooseAndIgnoreCase\">\n\t\t      \t\t<t:IndexedFieldURI FieldURI=\"persona:DisplayName\" FieldIndex=\"WWWW+=\">\n\t\t      \t\t</t:IndexedFieldURI>\n\t\t      \t\t<t:Constant Value=\"tom\"></t:Constant>\n\t\t      \t</t:Contains>\n\t      \t\t<t:Contains ContainmentMode=\"FullString\" ContainmentComparison=\"LooseAndIgnoreCase\">\n\t\t      \t\t<t:IndexedFieldURI FieldURI=\"persona:DisplayName\" FieldIndex=\"WWWW+=\">\n\t\t      \t\t</t:IndexedFieldURI>\n\t\t      \t\t<t:Constant Value=\"mike\"></t:Constant>\n\t\t      \t</t:Contains>\n\t      \t\t<t:Distance>100</t:Distance>\n\t      \t\t<t:Ordered>true</t:Ordered>\n\t      \t</t:Near>\n      \t</t:Or>\n      </m:Restriction>\n    </m:FindPeople>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetPersona",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2016\"/>\n   </soap:Header>\n   <soap:Body xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <m:GetPersona>\n         <m:PersonaId Id=\"AAUQAGOh/ljw4f1EnH1ragAAJkA=\"/>\n         <m:ParentFolderId>\n         \t<m:FolderId Id=\"AAMkA=\" ChangeKey=\"EQAAABY+\"/>\n         \t<m:AddressListId Id=\"DKSL==\"/>\n          \t<m:DistinguishedFolderId Id=\"AAMkA=\" ChangeKey=\"EQAAABY+\">\n          \t\t<m:Mailbox>\n\t                <m:Name>leviastan</m:Name>\n\t                <m:EmailAddress>leviastan@llqdev.onmicrosoft.com</m:EmailAddress>\n\t                <m:RoutingType>SMTP</m:RoutingType>\n\t                <m:MailboxType>Mailbox</m:MailboxType>\n          \t\t</m:Mailbox>\n          \t</m:DistinguishedFolderId>\n         </m:ParentFolderId>\n         <m:AdditionalProperties>\n           <t:FieldURI FieldURI=\"persona:DisplayName\"/>\n           <t:IndexedFieldURI FieldURI=\"persona:Title\" FieldIndex=\"ADAAA==\"/>\n         </m:AdditionalProperties>\n      </m:GetPersona>\n   </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetInboxRules",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n        xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n        xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n        xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2016\" />\n  </soap:Header>\n  <soap:Body>\n    <m:GetInboxRules>\n      <m:MailboxSmtpAddress>leviastan@llqdev.onmicrosoft.com</m:MailboxSmtpAddress>\n    </m:GetInboxRules>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateInboxRules",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2016\"/>\n  </soap:Header>\n  <soap:Body>\n      <m:UpdateInboxRules>\n        <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n        <m:Operations>\n          <t:CreateRuleOperation>\n            <t:Rule>\n              <t:DisplayName>MoveInterestingToJunk</t:DisplayName>\n              <t:Priority>1</t:Priority>\n              <t:IsEnabled>true</t:IsEnabled>\n              <t:Conditions>\n              \t<t:FromAddresses>\n              \t\t<t:Address>\n              \t\t\t<t:EmailAddress>aaa@llqdev.onmicrosoft.com</t:EmailAddress>\n              \t\t</t:Address>\n              \t\t<t:Address>\n              \t\t\t<t:EmailAddress>bbb@llqdev.onmicrosoft.com</t:EmailAddress>\n              \t\t</t:Address>\n              \t</t:FromAddresses>\n                <t:ContainsSubjectStrings>\n                  <t:String>Interesting</t:String>\n                </t:ContainsSubjectStrings>\n              </t:Conditions>\n              <t:Exceptions/>\n              <t:Actions>\n                <t:MoveToFolder>\n                  <t:DistinguishedFolderId Id=\"junkemail\" />\n                </t:MoveToFolder>\n              </t:Actions>\n            </t:Rule>\n          </t:CreateRuleOperation>\n          <t:SetRuleOperation>\n            <t:Rule>\n              <t:RuleId>SDxlkAA==</t:RuleId>\n              <t:DisplayName>MoveToImportant</t:DisplayName>\n              <t:Priority>2</t:Priority>\n              <t:IsEnabled>false</t:IsEnabled>\n              <t:Conditions>\n                <t:ContainsSubjectStrings>\n                  <t:String>Important</t:String>\n                </t:ContainsSubjectStrings>\n              </t:Conditions>\n              <t:Exceptions/>\n              <t:Actions>\n                <t:MoveToFolder>\n                  <t:DistinguishedFolderId Id=\"important\" />\n                </t:MoveToFolder>\n              </t:Actions>\n            </t:Rule>\n          </t:SetRuleOperation>\n          <t:DeleteRuleOperation>\n          \t<t:RuleId>SDUIH==</t:RuleId>\n          </t:DeleteRuleOperation>\n        </m:Operations>\n      </m:UpdateInboxRules>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "MarkAllItemsAsRead",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\" \n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2013\" />\n   </soap:Header>\n   <soap:Body>\n      <m:MarkAllItemsAsRead>\n         <m:ReadFlag>true</m:ReadFlag>\n         <m:SuppressReadReceipts>true</m:SuppressReadReceipts>\n         <m:FolderIds>\n            <t:DistinguishedFolderId Id=\"inbox\"/>\n         </m:FolderIds>\n      </m:MarkAllItemsAsRead>\n   </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConvertId",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2010\"/>\n  </soap:Header>\n  <soap:Body>\n    <ConvertId xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n               DestinationFormat=\"OwaId\">\n      <SourceIds>\n        <t:AlternateId Format=\"EwsId\" Id=\"AAMkAGZhN2IxYTA0LWNiNzItN=\"\n                       Mailbox=\"user1@example.com\"/>\n      </SourceIds>\n    </ConvertId>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ResolveNames",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <ResolveNames xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n                  ReturnFullContactData=\"true\">\n      <UnresolvedEntry>User2@email.com</UnresolvedEntry>\n    </ResolveNames>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetAppMarketplaceUrl",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2013\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"China Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:GetAppMarketplaceUrl>\n            <m:ApiVersionSupported>1.8</m:ApiVersionSupported>\n            <m:SchemaVersionSupported>1.1</m:SchemaVersionSupported>\n        </m:GetAppMarketplaceUrl>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindItem",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <FindItem xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n              Traversal=\"Shallow\">\n      <ItemShape>\n        <t:BaseShape>IdOnly</t:BaseShape>\n      </ItemShape>\n      <ParentFolderIds>\n        <t:DistinguishedFolderId Id=\"deleteditems\"/>\n      </ParentFolderIds>\n    </FindItem>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetPasswordExpirationDate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Header>\n  </soap:Header>\n  <soap:Body>\n    <tns:GetPasswordExpirationDate>\n      <tns:MailboxSmtpAddress>user1@DTZMZX-dom.extest.microsoft.com</tns:MailboxSmtpAddress>\n    </tns:GetPasswordExpirationDate>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ExpandDL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <ExpandDL xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n              xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n        <t:Mailbox>\n          <t:EmailAddress>TheDistributionList</t:EmailAddress>\n        </t:Mailbox>\n    </ExpandDL>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ApplyConversationAction",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2010_SP1\" />\n  </soap:Header>\n  <soap:Body>\n    <m:ApplyConversationAction>\n      <m:ConversationActions>\n        <t:ConversationAction>\n          <t:Action>AlwaysMove</t:Action>\n          <t:ConversationId Id=\"AAQkADVkNjM1EH39AWcDUGrnrnJ32hHpdc=\"/>\n          <t:DestinationFolderId>\n            <t:FolderId Id=\"AAMkADVkNjM1ODI3LTEwYTAtNDUBTTT6tWal35iSoKAAAABZZWAAA=\"/>\n          </t:DestinationFolderId>\n        </t:ConversationAction>\n      </m:ConversationActions>\n    </m:ApplyConversationAction>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetConversationItems",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\" \n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\" \n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n   <soap:Header>\n      <t:RequestServerVersion Version=\"Exchange2013\" />\n   </soap:Header>\n   <soap:Body>\n      <m:GetConversationItems>\n         <m:ItemShape>\n            <t:BaseShape>IdOnly</t:BaseShape>\n            <t:AdditionalProperties>\n               <t:FieldURI FieldURI=\"item:Subject\" />\n               <t:FieldURI FieldURI=\"item:DateTimeReceived\" />\n            </t:AdditionalProperties>\n         </m:ItemShape>\n         <m:FoldersToIgnore>\n            <t:DistinguishedFolderId Id=\"deleteditems\" />\n            <t:DistinguishedFolderId Id=\"drafts\" />\n         </m:FoldersToIgnore>\n         <m:SortOrder>TreeOrderDescending</m:SortOrder>\n         <m:Conversations>\n            <t:Conversation>\n               <t:ConversationId Id=\"AAQkADEzOTExYjJkakJCs=\" />\n            </t:Conversation>\n         </m:Conversations>\n      </m:GetConversationItems>\n   </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "FindConversation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\"\n               xmlns:m=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n  <soap:Header>\n    <t:RequestServerVersion Version=\"Exchange2010_SP1\" />\n  </soap:Header>\n  <soap:Body>\n    <m:FindConversation>\n      <m:IndexedPageItemView BasePoint=\"Beginning\" MaxEntriesReturned=\"1\" Offset=\"0\"/>\n      <m:ParentFolderId>\n        <t:DistinguishedFolderId Id =\"inbox\"/>\n      </m:ParentFolderId>\n    </m:FindConversation>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		}
+	]
+}

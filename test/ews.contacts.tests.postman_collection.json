@@ -1,0 +1,1102 @@
+{
+	"info": {
+		"_postman_id": "e5999002-8179-4d35-8ac2-54126c038688",
+		"name": "ews contacts tests",
+		"description": "EWS contacts specific tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Delegated contacts",
+			"item": [
+				{
+					"name": "GetFolder - get delegator contacts EWS Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the folderId of the contacts folder to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody);",
+									"    const folderId = $('t\\\\:FolderId').attr('id');",
+									"    pm.environment.set(\"contactsEWSId\", folderId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//After adding the API delegation, replace it with real delegator email",
+									"pm.environment.set(\"delegatorEmail\", pm.environment.get(\"email\"));",
+									"",
+									"console.log(\"GetFolder Delegated contacts tests\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"contacts\">\n                    <t:Mailbox>\n                        <t:EmailAddress>{{delegatorEmail}}</t:EmailAddress>\n                    </t:Mailbox>\n                </t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetFolder request in order to get the folderId of the contacts folder to be used when creating a contact"
+					},
+					"response": []
+				},
+				{
+					"name": "CreateItem - create contact in delegator Contacts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status and save the newly created contact's itemId and itemChangeKey to the environment.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"CreateItem for delegator Contacts\");",
+									"",
+									"// Verify that the contactsFolderId environment variable is set.",
+									"pm.expect(pm.environment.get(\"contactsEWSId\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{contactsEWSId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:Contact>\n                    <t:FileAsMapping>LastCommaFirst</t:FileAsMapping>\n                </t:Contact>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS CreateItem request for creating a contact"
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateItem - update contact in delegator Contacts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    // Only IDOnly fields are returned on an update.  Verify the uid",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.be.equal(pm.environment.get(\"itemId\"));",
+									"",
+									"    const parentFolderId = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get(\"contactsEWSId\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"UpdateItem for delegator Contacts\");",
+									"",
+									"// Verify that the itemId and itemChangeKey are set in the environment.",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateItem ConflictResolution=\"AlwaysOverwrite\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:Manager\"/>\n                            <t:Contact>\n                                <t:Manager>John Doe</t:Manager>\n                            </t:Contact>\n                        </t:SetItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </m:ItemChanges>\n        </m:UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS UpdatItem request for updating a contact"
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderItems for delegator contacts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"const jsonObject = xml2Json(responseBody);",
+									"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"const soapBody = soapEnvelope[\"soap:Body\"];",
+									"const soapResponse = soapBody[\"m:SyncFolderItemsResponse\"];",
+									"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"const soapResponseMessage = soapResponseMessages[\"m:SyncFolderItemsResponseMessage\"];",
+									"",
+									"",
+									"pm.test(\"Verify response\", function () {",
+									"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"    pm.expect(soapResponseMessage).to.have.property(\"m:SyncState\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"SyncFolderItems for Contacts\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderItems xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemShape>\n        <t:BaseShape>Default</t:BaseShape>\n      </ItemShape>\n      <SyncFolderId>\n        <t:FolderId Id=\"{{contactsEWSId}}\"/>\n      </SyncFolderId>\n      <MaxChangesReturned>1000</MaxChangesReturned>\n    </SyncFolderItems>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "This test cleans-up the undeliverable email notices from the user's inbox"
+					},
+					"response": []
+				},
+				{
+					"name": "GetItem - retrieve contact from delegator Contacts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we recieved a 200 status and that the data submitted in the UpdateItem call are correctly returned.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const itemId = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+									"    pm.expect(itemId).to.be.equal(pm.environment.get(\"itemId\"));",
+									"",
+									"    const parentFolderId = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:ParentFolderId\"][\"$\"][\"Id\"];",
+									"    pm.expect(parentFolderId).to.equal(pm.environment.get(\"contactsEWSId\"));",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"GetItem for delegated Contacts\");",
+									"",
+									"// Verify that itemId and itemChangeKey are set",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n                        <ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:BodyType>HTML</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Sensitivity\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x10F4\" PropertyType=\"Boolean\"/>\n                    <t:FieldURI FieldURI=\"item:Categories\"/>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                    <t:FieldURI FieldURI=\"item:Subject\"/>\n                    <t:FieldURI FieldURI=\"item:Culture\"/>\n                    <t:FieldURI FieldURI=\"item:Body\"/>\n                    <t:FieldURI FieldURI=\"item:LastModifiedTime\"/>\n                    <t:FieldURI FieldURI=\"contacts:CompleteName\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:EmailAddress\" FieldIndex=\"EmailAddress1\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:EmailAddress\" FieldIndex=\"EmailAddress2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:EmailAddress\" FieldIndex=\"EmailAddress3\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:Street\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:City\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:State\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:PostalCode\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:Street\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:City\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:State\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:PostalCode\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:Street\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:City\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:State\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:PostalCode\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:ImAddress\" FieldIndex=\"ImAddress1\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:ImAddress\" FieldIndex=\"ImAddress2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:ImAddress\" FieldIndex=\"ImAddress3\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"BusinessPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"BusinessPhone2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"BusinessFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"CompanyMainPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"AssistantPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"HomePhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"MobilePhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"Pager\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"HomePhone2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"HomeFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"PrimaryPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherTelephone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"Callback\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherTelephone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"RadioPhone\"/>\n                    <t:FieldURI FieldURI=\"contacts:Birthday\"/>\n                    <t:FieldURI FieldURI=\"contacts:BusinessHomePage\"/>\n                    <t:FieldURI FieldURI=\"contacts:Children\"/>\n                    <t:FieldURI FieldURI=\"contacts:CompanyName\"/>\n                    <t:FieldURI FieldURI=\"contacts:Department\"/>\n                    <t:FieldURI FieldURI=\"contacts:FileAsMapping\"/>\n                    <t:FieldURI FieldURI=\"contacts:JobTitle\"/>\n                    <t:FieldURI FieldURI=\"contacts:AssistantName\"/>\n                    <t:FieldURI FieldURI=\"contacts:Manager\"/>\n                    <t:FieldURI FieldURI=\"contacts:SpouseName\"/>\n                    <t:FieldURI FieldURI=\"contacts:WeddingAnniversary\"/>\n                    <t:FieldURI FieldURI=\"contacts:PostalAddressIndex\"/>\n                    <t:FieldURI FieldURI=\"contacts:OfficeLocation\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34144\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34050\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x3a70\" PropertyType=\"BinaryArray\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x3a50\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x3a43\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x1090\" PropertyType=\"Integer\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33029\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33028\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33039\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32812\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32813\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32814\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32900\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32916\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32932\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32789\" PropertyType=\"Boolean\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n            </m:ItemIds>\n        </m:GetItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "EWS GetItem request for fetching a contact"
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteItem - delete contact from delegator Contacts",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"DeleteItem for delegated Contact\");",
+									"",
+									"// Verify that the itemId and itemChangeKey are set in the environment.",
+									"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+									"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    const jsonObject = xml2Json(responseBody);",
+									"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    pm.environment.unset(\"itemId\");",
+									"    pm.environment.unset(\"itemChangeKey\");",
+									"    pm.environment.unset(\"contactsFolderId\");",
+									"    pm.environment.unset(\"contactsEWSId\");",
+									"    pm.environment.unset(\"delegatorEmail\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:DeleteItem DeleteType=\"HardDelete\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </m:ItemIds>\n        </m:DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Test to exercise the EWS DeleteItem request to delete a contact"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GetFolder for root contacts folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the folderId of the contacts folder to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetFolderResponse\"][\"m:ResponseMessages\"][\"m:GetFolderResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody);",
+							"    const folderId = $('t\\\\:FolderId').attr('id');",
+							"    console.log(folderId);",
+							"    pm.environment.set(\"contactsFolderId\", folderId);",
+							"    ",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for contacts folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n            </m:FolderShape>\n            <m:FolderIds>\n                <t:DistinguishedFolderId Id=\"contacts\"></t:DistinguishedFolderId>\n            </m:FolderIds>\n        </m:GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetFolder request in order to get the folderId of the contacts folder to be used when creating a contact"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateItem for Contact",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status and save the newly created contact's itemId and itemChangeKey to the environment.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    const $ = cheerio.load(responseBody)",
+							"    pm.environment.set('itemId', $('t\\\\:ItemId').attr('id'))",
+							"    pm.environment.set('itemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateItem for Contact\");",
+							"",
+							"// Verify that the contactsFolderId environment variable is set.",
+							"pm.expect(pm.environment.get(\"contactsFolderId\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateItem MessageDisposition=\"SaveOnly\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:SavedItemFolderId>\n                <t:FolderId Id=\"{{contactsFolderId}}\"/>\n            </m:SavedItemFolderId>\n            <m:Items>\n                <t:Contact>\n                    <t:FileAsMapping>LastCommaFirst</t:FileAsMapping>\n                </t:Contact>\n            </m:Items>\n        </m:CreateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS CreateItem request for creating a contact"
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateItem for Contact",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status from the API call and that the response reflects what we sent in the UpdateItem call.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateItemResponse\"][\"m:ResponseMessages\"][\"m:UpdateItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    console.log(responseMessage);",
+							"",
+							"    // Only IDOnly fields are returned on an update.  Verify the uid",
+							"    const expected = pm.environment.get(\"itemId\");",
+							"    const uid = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:ItemId\"][\"$\"][\"Id\"];",
+							"    pm.expect(uid).to.be.equal(expected);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"UpdateItem for Contact\");",
+							"",
+							"// Verify that the itemId and itemChangeKey are set in the environment.",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateItem ConflictResolution=\"AlwaysOverwrite\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemChanges>\n                <t:ItemChange>\n                    <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n                    <t:Updates>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:Manager\"/>\n                            <t:Contact>\n                                <t:Manager>John Doe</t:Manager>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:AssistantName\"/>\n                            <t:Contact>\n                                <t:AssistantName>John Doe</t:AssistantName>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:SpouseName\"/>\n                            <t:Contact>\n                                <t:SpouseName>Jane Doe</t:SpouseName>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32899\" PropertyType=\"String\"/>\n                            <t:Contact>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32899\" PropertyType=\"String\"/>\n                                    <t:Value>fozzy.bear@fakemail.com</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32896\" PropertyType=\"String\"/>\n                            <t:Contact>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32896\" PropertyType=\"String\"/>\n                                    <t:Value>fozzy.bear@fakemail.com</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32898\" PropertyType=\"String\"/>\n                            <t:Contact>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32898\" PropertyType=\"String\"/>\n                                    <t:Value>SMTP</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32900\" PropertyType=\"String\"/>\n                            <t:Contact>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32900\" PropertyType=\"String\"/>\n                                    <t:Value>fozzy.bear@fakemail.com</t:Value>\n                                </t:ExtendedProperty>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"EmailAddress1\" FieldURI=\"contacts:EmailAddress\"/>\n                            <t:Contact>\n                                <t:EmailAddresses>\n                                    <t:Entry Key=\"EmailAddress1\">fozzy.bear@fakemail.com</t:Entry>\n                                </t:EmailAddresses>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32915\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32912\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32914\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32916\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:IndexedFieldURI FieldIndex=\"EmailAddress2\" FieldURI=\"contacts:EmailAddress\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32931\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32928\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32930\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32932\" PropertyType=\"String\"/>\n                        </t:DeleteItemField>\n                        <t:DeleteItemField>\n                            <t:IndexedFieldURI FieldIndex=\"EmailAddress3\" FieldURI=\"contacts:EmailAddress\"/>\n                        </t:DeleteItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"Home\" FieldURI=\"contacts:PhysicalAddress:State\"/>\n                            <t:Contact>\n                                <t:PhysicalAddresses>\n                                    <t:Entry Key=\"Home\">\n                                        <t:State>NC</t:State>\n                                    </t:Entry>\n                                </t:PhysicalAddresses>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:DeleteItemField>\n                            <t:IndexedFieldURI FieldIndex=\"Home\" FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\"/>\n                        </t:DeleteItemField>\n                        <t:SetItemField>\n                            <t:ExtendedFieldURI PropertyName=\"PostalAddressCountryCodeHome\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                            <t:Contact>\n                                <t:ExtendedProperty>\n                                    <t:ExtendedFieldURI PropertyName=\"PostalAddressCountryCodeHome\" PropertySetId=\"A7B529B5-4B75-47A7-A24F-20743D6C55CD\" PropertyType=\"String\"/>\n                                    <t:Value></t:Value>\n                                </t:ExtendedProperty>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"Home\" FieldURI=\"contacts:PhysicalAddress:Street\"/>\n                            <t:Contact>\n                                <t:PhysicalAddresses>\n                                    <t:Entry Key=\"Home\">\n                                        <t:Street>1313 Mockingbird Ln</t:Street>\n                                    </t:Entry>\n                                </t:PhysicalAddresses>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"Home\" FieldURI=\"contacts:PhysicalAddress:City\"/>\n                            <t:Contact>\n                                <t:PhysicalAddresses>\n                                    <t:Entry Key=\"Home\">\n                                        <t:City>Anytown</t:City>\n                                    </t:Entry>\n                                </t:PhysicalAddresses>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"Home\" FieldURI=\"contacts:PhysicalAddress:PostalCode\"/>\n                            <t:Contact>\n                                <t:PhysicalAddresses>\n                                    <t:Entry Key=\"Home\">\n                                        <t:PostalCode>00000</t:PostalCode>\n                                    </t:Entry>\n                                </t:PhysicalAddresses>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"MobilePhone\" FieldURI=\"contacts:PhoneNumber\"/>\n                            <t:Contact>\n                                <t:PhoneNumbers>\n                                    <t:Entry Key=\"MobilePhone\">9195551212</t:Entry>\n                                </t:PhoneNumbers>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:IndexedFieldURI FieldIndex=\"ImAddress1\" FieldURI=\"contacts:ImAddress\"/>\n                            <t:Contact>\n                                <t:ImAddresses>\n                                    <t:Entry Key=\"ImAddress1\">fozzy.bear@fakeim.com</t:Entry>\n                                </t:ImAddresses>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"item:Subject\"/>\n                            <t:Contact>\n                                <t:Subject>Fozzy Bear</t:Subject>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:DisplayName\"/>\n                            <t:Contact>\n                                <t:DisplayName>Fozzy Bear</t:DisplayName>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:GivenName\"/>\n                            <t:Contact>\n                                <t:GivenName>Fozzy</t:GivenName>\n                            </t:Contact>\n                        </t:SetItemField>\n                        <t:SetItemField>\n                            <t:FieldURI FieldURI=\"contacts:Surname\"/>\n                            <t:Contact>\n                                <t:Surname>Bear</t:Surname>\n                            </t:Contact>\n                        </t:SetItemField>\n                    </t:Updates>\n                </t:ItemChange>\n            </m:ItemChanges>\n        </m:UpdateItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS UpdatItem request for updating a contact"
+			},
+			"response": []
+		},
+		{
+			"name": "GetItem for Contact",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we recieved a 200 status and that the data submitted in the UpdateItem call are correctly returned.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetItemResponse\"][\"m:ResponseMessages\"][\"m:GetItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    // Given Name",
+							"    const itemGivenName = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:CompleteName\"][\"t:FirstName\"];",
+							"    pm.expect(itemGivenName).to.equal(\"Fozzy\");",
+							"",
+							"    // Surname",
+							"    const itemSurname = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:CompleteName\"][\"t:LastName\"];",
+							"    pm.expect(itemSurname).to.equal(\"Bear\");",
+							"",
+							"    // Email Address",
+							"    const emailAddress = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:EmailAddresses\"][\"t:Entry\"][\"_\"];",
+							"    pm.expect(emailAddress).to.equal(\"fozzy.bear@fakemail.com\");",
+							"",
+							"    // IM Address",
+							"    const imAddress = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:ImAddresses\"][\"t:Entry\"][\"_\"];",
+							"    pm.expect(imAddress).to.equal(\"fozzy.bear@fakeim.com\");",
+							"",
+							"    // Physical Address",
+							"    const addressObject = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:PhysicalAddresses\"][\"t:Entry\"][\"$\"];",
+							"    pm.expect(addressObject).to.be.an('object').that.has.all.keys('Key');",
+							"    const addressType = addressObject[\"Key\"];",
+							"    pm.expect(addressType).to.equal(\"Home\");",
+							"",
+							"    // Street",
+							"    const streetAddress = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:PhysicalAddresses\"][\"t:Entry\"][\"t:Street\"];",
+							"    pm.expect(streetAddress).to.equal(\"1313 Mockingbird Ln\");",
+							"",
+							"    // City",
+							"    const cityAddress = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:PhysicalAddresses\"][\"t:Entry\"][\"t:City\"];",
+							"    pm.expect(cityAddress).to.equal(\"Anytown\");",
+							"",
+							"    // State",
+							"    const stateAddress = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:PhysicalAddresses\"][\"t:Entry\"][\"t:State\"];",
+							"    pm.expect(stateAddress).to.equal(\"NC\");",
+							"",
+							"    // Postal Code",
+							"    const zipCode = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:PhysicalAddresses\"][\"t:Entry\"][\"t:PostalCode\"];",
+							"    pm.expect(zipCode).to.equal(\"00000\");",
+							"",
+							"    // Mobile Phone Number",
+							"    const phoneNumber = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:PhoneNumbers\"][\"t:Entry\"][\"_\"];",
+							"    pm.expect(phoneNumber).to.equal(\"9195551212\");",
+							"",
+							"    // Manager",
+							"    const manager = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:Manager\"];",
+							"    pm.expect(manager).to.equal(\"John Doe\");",
+							"",
+							"    // Assistant",
+							"    const assistant = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:AssistantName\"]",
+							"    pm.expect(assistant).to.equal(\"John Doe\");",
+							"",
+							"    // Spouse",
+							"    const spouse = responseMessage[\"m:Items\"][\"t:Contact\"][\"t:SpouseName\"]",
+							"    pm.expect(spouse).to.equal(\"Jane Doe\");",
+							"",
+							"});",
+							"",
+							"// TODO:  Remove this when LABS-806 is fixed to re-enable the GetUserOofSettings test",
+							"postman.setNextRequest(\"DeleteItem for Contact\");"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetItem for Contact\");",
+							"",
+							"// Verify that itemId and itemChangeKey are set",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:GetItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n                        <ItemShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:BodyType>HTML</t:BodyType>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"item:Sensitivity\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x10F4\" PropertyType=\"Boolean\"/>\n                    <t:FieldURI FieldURI=\"item:Categories\"/>\n                    <t:FieldURI FieldURI=\"item:Attachments\"/>\n                    <t:FieldURI FieldURI=\"item:Subject\"/>\n                    <t:FieldURI FieldURI=\"item:Culture\"/>\n                    <t:FieldURI FieldURI=\"item:Body\"/>\n                    <t:FieldURI FieldURI=\"item:LastModifiedTime\"/>\n                    <t:FieldURI FieldURI=\"contacts:CompleteName\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:EmailAddress\" FieldIndex=\"EmailAddress1\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:EmailAddress\" FieldIndex=\"EmailAddress2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:EmailAddress\" FieldIndex=\"EmailAddress3\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:Street\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:City\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:State\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:PostalCode\" FieldIndex=\"Home\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:Street\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:City\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:State\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:PostalCode\" FieldIndex=\"Business\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:Street\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:City\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:State\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:CountryOrRegion\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhysicalAddress:PostalCode\" FieldIndex=\"Other\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:ImAddress\" FieldIndex=\"ImAddress1\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:ImAddress\" FieldIndex=\"ImAddress2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:ImAddress\" FieldIndex=\"ImAddress3\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"BusinessPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"BusinessPhone2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"BusinessFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"CompanyMainPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"AssistantPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"HomePhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"MobilePhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"Pager\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"HomePhone2\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"HomeFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"PrimaryPhone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherTelephone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"Callback\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherTelephone\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"OtherFax\"/>\n                    <t:IndexedFieldURI FieldURI=\"contacts:PhoneNumber\" FieldIndex=\"RadioPhone\"/>\n                    <t:FieldURI FieldURI=\"contacts:Birthday\"/>\n                    <t:FieldURI FieldURI=\"contacts:BusinessHomePage\"/>\n                    <t:FieldURI FieldURI=\"contacts:Children\"/>\n                    <t:FieldURI FieldURI=\"contacts:CompanyName\"/>\n                    <t:FieldURI FieldURI=\"contacts:Department\"/>\n                    <t:FieldURI FieldURI=\"contacts:FileAsMapping\"/>\n                    <t:FieldURI FieldURI=\"contacts:JobTitle\"/>\n                    <t:FieldURI FieldURI=\"contacts:AssistantName\"/>\n                    <t:FieldURI FieldURI=\"contacts:Manager\"/>\n                    <t:FieldURI FieldURI=\"contacts:SpouseName\"/>\n                    <t:FieldURI FieldURI=\"contacts:WeddingAnniversary\"/>\n                    <t:FieldURI FieldURI=\"contacts:PostalAddressIndex\"/>\n                    <t:FieldURI FieldURI=\"contacts:OfficeLocation\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34144\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34050\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Common\" PropertyId=\"34051\" PropertyType=\"Boolean\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x3a70\" PropertyType=\"BinaryArray\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x3a50\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x3a43\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x1090\" PropertyType=\"Integer\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33029\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33028\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Task\" PropertyId=\"33039\" PropertyType=\"SystemTime\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32812\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32813\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32814\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32900\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32916\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32932\" PropertyType=\"String\"/>\n                    <t:ExtendedFieldURI DistinguishedPropertySetId=\"Address\" PropertyId=\"32789\" PropertyType=\"Boolean\"/>\n                </t:AdditionalProperties>\n            </ItemShape>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n            </m:ItemIds>\n        </m:GetItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "EWS GetItem request for fetching a contact"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateFolder for Contacts folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapResponse = soapBody[\"m:CreateFolderResponse\"];",
+							"const soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"const message = soapResponseMessages[\"m:CreateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify created folder\", function () {",
+							"",
+							"    pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"",
+							"    const folders = message[\"m:Folders\"];",
+							"    const folder = folders[\"t:ContactsFolder\"];",
+							"    pm.expect(folder).to.have.property(\"t:FolderId\");",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"EWSContacts\");",
+							"",
+							"    // Save the folderId so it can be used in subsequent tests",
+							"    pm.environment.set(\"EWSContactFolderId\", (folder[\"t:FolderId\"].$.Id)); ",
+							"",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"CreateFolder for Contacts folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:CreateFolder\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ParentFolderId>\n                <t:DistinguishedFolderId Id=\"contacts\"></t:DistinguishedFolderId>\n            </m:ParentFolderId>\n            <m:Folders>\n                <t:ContactsFolder>\n                    <t:DisplayName>EWSContacts</t:DisplayName>\n                </t:ContactsFolder>\n            </m:Folders>\n        </m:CreateFolder>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFolder for Contacts folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"const jsonObject = xml2Json(responseBody);",
+							"const soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"const soapBody = soapEnvelope[\"soap:Body\"];",
+							"const soapGetFolderResponse = soapBody[\"m:GetFolderResponse\"];",
+							"const soapResponseMessages = soapGetFolderResponse[\"m:ResponseMessages\"];",
+							"const soapGetFolderResponseMessage = soapResponseMessages[\"m:GetFolderResponseMessage\"];",
+							"const folders = soapGetFolderResponseMessage[\"m:Folders\"];",
+							"const folder = folders[\"t:ContactsFolder\"];",
+							"",
+							"",
+							"pm.test(\"Verify contacts folder created by CreateFolder.\", function () {",
+							"    pm.expect(\"NoError\").to.equal(soapGetFolderResponseMessage[\"m:ResponseCode\"]);",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.equal(pm.environment.get(\"EWSContactFolderId\"));",
+							"    pm.expect(folder[\"t:FolderClass\"]).to.equal(\"IPF.Contact\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.equal(\"EWSContacts\");",
+							"    pm.expect(folder[\"t:TotalCount\"]).to.eql(\"0\");",
+							"    pm.expect(folder[\"t:ChildFolderCount\"]).to.eql(\"0\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"GetFolder for Contacts folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\"\n    xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP2\" />\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetFolder\n            xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>Default</t:BaseShape>\n            </FolderShape>\n            <FolderIds>\n                <t:FolderId Id=\"{{EWSContactFolderId}}\"/>\n            </FolderIds>\n        </GetFolder>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Verify folder folder response for contacts folder"
+			},
+			"response": []
+		},
+		{
+			"name": "Rename Contacts Folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:UpdateFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:UpdateFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated conacts folder\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    console.log(soapResponseMessage);",
+							"    const folders = soapResponseMessage[\"m:Folders\"];",
+							"    const folder = folders[\"t:ContactsFolder\"];",
+							"    pm.expect(folder[\"t:FolderId\"].$.Id).to.eql(pm.environment.get(\"EWSContactFolderId\")); // Should keep same folder id",
+							"    pm.expect(folder).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(folder[\"t:DisplayName\"]).to.eql(\"EWSContactsFolder2\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Rename Contacts Folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <UpdateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n      <FolderChanges>\n        <t:FolderChange>\n          <t:FolderId Id=\"{{EWSContactFolderId}}\" ChangeKey=\"ck-{{EWSContactFolderId}}\"/>\n          <t:Updates>\n            <t:SetFolderField>\n              <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n              <t:Folder>\n                <t:DisplayName>EWSContactsFolder2</t:DisplayName>\n              </t:Folder>\n            </t:SetFolderField>\n          </t:Updates>\n        </t:FolderChange>\n      </FolderChanges>\n    </UpdateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Update the folder by changing its name"
+			},
+			"response": []
+		},
+		{
+			"name": "Move contact to folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"",
+							"var soapResponse = soapBody[\"m:MoveItemResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:MoveItemResponseMessage\"];",
+							"",
+							"pm.test(\"Verify updated conacts folder\", function () {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"    const items = soapResponseMessage[\"m:Items\"];",
+							"    const contact = items[\"t:Contact\"];",
+							"    pm.expect(contact[\"t:ItemId\"].$.Id).to.eql(pm.environment.get(\"itemId\")); ",
+							"    pm.expect(contact).to.have.property(\"t:ParentFolderId\");",
+							"    pm.expect(contact[\"t:ParentFolderId\"].$.Id).to.eql(pm.environment.get(\"EWSContactFolderId\"));",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Move contact to folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:MoveItem\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ToFolderId>\n                <t:FolderId Id=\"{{EWSContactFolderId}}\" ChangeKey=\"ck-{{EWSContactFolderId}}\"/>\n            </m:ToFolderId>\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\" ChangeKey=\"{{itemChangeKey}}\"/>\n            </m:ItemIds>\n        </m:MoveItem>\n    </soap:Body>\n</soap:Envelope>\n",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Move the recently create contact to the newly created folder"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteFolder for Contacts folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"});",
+							"",
+							"var jsonObject = xml2Json(responseBody);",
+							"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+							"var soapBody = soapEnvelope[\"soap:Body\"];",
+							"var soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+							"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+							"var soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+							"",
+							"pm.test(\"Delete folder response is correct\", function() {",
+							"    pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+							"    pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+							"});",
+							"",
+							"pm.environment.unset(\"EWSContactFolderId\");",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"DeleteFolder for Contacts folder\");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        <t:FolderId Id=\"{{EWSContactFolderId}}\" />\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Delete the folder created from CreateFolder test."
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteItem for Contact",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"DeleteItem for Contact\");",
+							"",
+							"// Verify that the itemId and itemChangeKey are set in the environment.",
+							"pm.expect(pm.environment.get(\"itemId\")).to.be.a('string');",
+							"pm.expect(pm.environment.get(\"itemChangeKey\")).to.be.a('string');"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verify that we received a 200 status code and clear environment variables we set for this test suite.",
+							"pm.test(\"Status test\", function () {",
+							"    pm.response.to.be.ok;",
+							"",
+							"    const jsonObject = xml2Json(responseBody);",
+							"    const responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+							"",
+							"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+							"",
+							"    pm.environment.unset(\"itemId\");",
+							"    pm.environment.unset(\"itemChangeKey\");",
+							"    pm.environment.unset(\"contactsFolderId\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope\n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2007_SP1\"/>\n    </soap:Header>\n    <soap:Body>\n        <m:DeleteItem DeleteType=\"HardDelete\"\n            xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n            xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <m:ItemIds>\n                <t:ItemId Id=\"{{itemId}}\"/>\n            </m:ItemIds>\n        </m:DeleteItem>\n    </soap:Body>\n</soap:Envelope>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				},
+				"description": "Test to exercise the EWS DeleteItem request to delete a contact"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Verify that email and password are set in the environment.",
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"// Setup auth headers",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

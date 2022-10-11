@@ -1,0 +1,3279 @@
+{
+	"info": {
+		"_postman_id": "8d636286-c807-4d39-9d65-ee22395d7b82",
+		"name": "ews rules",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Action Delete",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Delete: GetInboxRules Test\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules with DeleteAction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Delete: Add Rules with DeleteAction\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectStrings>\n                                <t:String>test</t:String>\n                            </t:ContainsSubjectStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:Delete>true</t:Delete>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Actions\"][\"t:Delete\"]).to.eql(\"true\");",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Delete: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Delete: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Delete: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Action Stop Processing",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Stop Processing: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules with Stop Processing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Stop Processing: Add Rules with Stop Procesing\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectStrings>\n                                <t:String>test</t:String>\n                            </t:ContainsSubjectStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:Delete>true</t:Delete>\n                            <t:StopProcessingRules>true</t:StopProcessingRules>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Actions\"][\"t:StopProcessingRules\"]).to.eql(\"true\");",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Stop Processing: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Stop Processing: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Stop Processing: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Action Move To Folder",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderHierarchy Check if RulesTargetFolder exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"pm.test(\"Verify success for request\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"NoError\");",
+									"});",
+									"",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"var soapResponse = soapBody[\"m:SyncFolderHierarchyResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:SyncFolderHierarchyResponseMessage\"];",
+									"var soapChanges = soapResponseMessage[\"m:Changes\"];",
+									"var soapCreate = soapChanges[\"t:Create\"];",
+									"for (const chg of soapCreate) {",
+									"    if (chg[\"t:Folder\"] && chg[\"t:Folder\"][\"t:DisplayName\"] === \"RulesTargetFolder\") {",
+									"        pm.environment.set(\"rulesTargetFolder\", chg[\"t:Folder\"][\"t:FolderId\"][\"$\"][\"Id\"]);",
+									"        return",
+									"    }",
+									"}",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: SyncFolderHierarchy Check\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderHierarchy xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"folder:ParentFolderId\"/>\n                    <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n                    <t:FieldURI FieldURI=\"folder:FolderClass\"/>\n                    <t:FieldURI FieldURI=\"folder:ManagedFolderInformation\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x10F4\" PropertyType=\"Boolean\"/>\n                </t:AdditionalProperties>\n            </FolderShape>\n            <SyncFolderId>\n                <t:DistinguishedFolderId Id=\"msgfolderroot\"/>\n            </SyncFolderId>\n    </SyncFolderHierarchy>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateFolder Rule Target Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.environment.get(\"rulesTargetFolder\")) {",
+									"    // Already have a RulesTargetFolder....this is just setup",
+									"    return;",
+									"}",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"console.log(jsonObject);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"var soapResponse = soapBody[\"m:CreateFolderResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:CreateFolderResponseMessage\"];",
+									"",
+									"pm.test(\"Verify created folders\", function () {",
+									"",
+									"    let parentFolderId = undefined; ",
+									"",
+									"        console.info(`Processing message: ${JSON.stringify(soapResponseMessage)}`)",
+									"",
+									"        pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"        pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"        const folders = soapResponseMessage[\"m:Folders\"];",
+									"        const folder = folders[\"t:Folder\"];",
+									"        pm.expect(folder).to.have.property(\"t:FolderId\");",
+									"        pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+									"        if (parentFolderId) {",
+									"            pm.expect(folder[\"t:ParentFolderId\"].$.Id).to.eql(parentFolderId);",
+									"        }",
+									"        parentFolderId = folder[\"t:ParentFolderId\"].$.Id; // All folders created should have the same parent",
+									"        pm.expect(folder[\"t:DisplayName\"]).to.be.oneOf([\"RulesTargetFolder\"]);",
+									"",
+									"        // Save the folders created so they can be used by other Postman tests and be removed when all Postman tests complete.",
+									"        pm.environment.set(\"rulesTargetFolder\", folder[\"t:FolderId\"].$.Id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: CreateFolder Rule Target Folder\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n      xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ParentFolderId>\n        <t:DistinguishedFolderId Id=\"msgfolderroot\"/>\n      </ParentFolderId>\n      <Folders>\n        <t:Folder>\n          <t:DisplayName>RulesTargetFolder</t:DisplayName>\n        </t:Folder>\n      </Folders>\n    </CreateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules Move To Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: Add Rules Move To Folder\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectStrings>\n                                <t:String>test</t:String>\n                            </t:ContainsSubjectStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                        <t:MoveToFolder>\n                            <t:FolderId Id=\"{{rulesTargetFolder}}\" ChangeKey=\"ck-{{rulesTargetFolder}}\"/>\n                        </t:MoveToFolder>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Actions\"][\"t:MoveToFolder\"][\"t:FolderId\"][\"$\"][\"Id\"]).to.eql(pm.environment.get(\"rulesTargetFolder\"));",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"   ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Rule Target Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"var soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+									"if (!Array.isArray(soapResponseMessage)){",
+									"    soapResponseMessage = [soapResponseMessage];",
+									"}",
+									"",
+									"pm.test(\"Delete folder response is correct\", function() {",
+									"    for (const message of soapResponseMessage) {",
+									"        pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+									"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"    }",
+									"});",
+									"",
+									"pm.environment.unset(\"folderIdsToDelete\");",
+									"pm.environment.unset(\"rulesTargetFolder\");",
+									"pm.environment.unset(\"deleteRuleId\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Move To Folder: Delete Rule Target Folder\");",
+									"var idString = `<t:FolderId Id=\"${pm.environment.get('rulesTargetFolder')}\" />`;",
+									"pm.environment.set(\"folderIdsToDelete\", idString);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>{{folderIdsToDelete}}</FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Delete the folders created from CreateFolder test."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Action Copy To Folder",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SyncFolderHierarchy Check if RulesTargetFolder exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"pm.test(\"Verify success for request\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"NoError\");",
+									"});",
+									"",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"var soapResponse = soapBody[\"m:SyncFolderHierarchyResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:SyncFolderHierarchyResponseMessage\"];",
+									"var soapChanges = soapResponseMessage[\"m:Changes\"];",
+									"var soapCreate = soapChanges[\"t:Create\"];",
+									"for (const chg of soapCreate) {",
+									"    if (chg[\"t:Folder\"] && chg[\"t:Folder\"][\"t:DisplayName\"] === \"RulesTargetFolder\") {",
+									"        pm.environment.set(\"rulesTargetFolder\", chg[\"t:Folder\"][\"t:FolderId\"][\"$\"][\"Id\"]);",
+									"        return",
+									"    }",
+									"}",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: SyncFolderHierarchy\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <SyncFolderHierarchy xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <FolderShape>\n                <t:BaseShape>IdOnly</t:BaseShape>\n                <t:AdditionalProperties>\n                    <t:FieldURI FieldURI=\"folder:ParentFolderId\"/>\n                    <t:FieldURI FieldURI=\"folder:DisplayName\"/>\n                    <t:FieldURI FieldURI=\"folder:FolderClass\"/>\n                    <t:FieldURI FieldURI=\"folder:ManagedFolderInformation\"/>\n                    <t:ExtendedFieldURI PropertyTag=\"0x10F4\" PropertyType=\"Boolean\"/>\n                </t:AdditionalProperties>\n            </FolderShape>\n            <SyncFolderId>\n                <t:DistinguishedFolderId Id=\"msgfolderroot\"/>\n            </SyncFolderId>\n    </SyncFolderHierarchy>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateFolder Rule Target Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"if (pm.environment.get(\"rulesTargetFolder\")) {",
+									"    // Already have a RulesTargetFolder....this is just setup",
+									"    return;",
+									"}",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"",
+									"if (soapBody[\"soap:Fault\"] && soapBody[\"soap:Fault\"][\"faultstring\"].includes(\"A folder or view with this name already exists\")) {",
+									"    return;",
+									"}",
+									"var soapResponse = soapBody[\"m:CreateFolderResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:CreateFolderResponseMessage\"];",
+									"",
+									"pm.test(\"Verify created folders\", function () {",
+									"",
+									"    let parentFolderId = undefined; ",
+									"",
+									"        console.info(`Processing message: ${JSON.stringify(soapResponseMessage)}`)",
+									"",
+									"        pm.expect(soapResponseMessage.$.ResponseClass).to.eql(\"Success\");",
+									"        pm.expect(soapResponseMessage[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"",
+									"        const folders = soapResponseMessage[\"m:Folders\"];",
+									"        const folder = folders[\"t:Folder\"];",
+									"        pm.expect(folder).to.have.property(\"t:FolderId\");",
+									"        pm.expect(folder).to.have.property(\"t:ParentFolderId\")",
+									"        if (parentFolderId) {",
+									"            pm.expect(folder[\"t:ParentFolderId\"].$.Id).to.eql(parentFolderId);",
+									"        }",
+									"        parentFolderId = folder[\"t:ParentFolderId\"].$.Id; // All folders created should have the same parent",
+									"        pm.expect(folder[\"t:DisplayName\"]).to.be.oneOf([\"RulesTargetFolder\"]);",
+									"",
+									"        // Save the folders created so they can be used by other Postman tests and be removed when all Postman tests complete.",
+									"        pm.environment.set(\"rulesTargetFolder\", folder[\"t:FolderId\"].$.Id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: CreateFolder Rule target folder\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n      xmlns:t=\"https://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateFolder xmlns=\"https://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ParentFolderId>\n        <t:DistinguishedFolderId Id=\"msgfolderroot\"/>\n      </ParentFolderId>\n      <Folders>\n        <t:Folder>\n          <t:DisplayName>RulesTargetFolder</t:DisplayName>\n        </t:Folder>\n      </Folders>\n    </CreateFolder>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules Copy To Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: Add Rules Copy To Folder\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectStrings>\n                                <t:String>test</t:String>\n                            </t:ContainsSubjectStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                        <t:CopyToFolder>\n                            <t:FolderId Id=\"{{rulesTargetFolder}}\" ChangeKey=\"ck-{{rulesTargetFolder}}\"/>\n                        </t:CopyToFolder>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Actions\"][\"t:CopyToFolder\"][\"t:FolderId\"][\"$\"][\"Id\"]).to.eql(pm.environment.get(\"rulesTargetFolder\"));",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Rule Target Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"});",
+									"",
+									"var jsonObject = xml2Json(responseBody);",
+									"var soapEnvelope = jsonObject[\"soap:Envelope\"];",
+									"var soapBody = soapEnvelope[\"soap:Body\"];",
+									"var soapResponse = soapBody[\"m:DeleteFolderResponse\"];",
+									"var soapResponseMessages = soapResponse[\"m:ResponseMessages\"];",
+									"var soapResponseMessage = soapResponseMessages[\"m:DeleteFolderResponseMessage\"];",
+									"if (!Array.isArray(soapResponseMessage)){",
+									"    soapResponseMessage = [soapResponseMessage];",
+									"}",
+									"",
+									"pm.test(\"Delete folder response is correct\", function() {",
+									"    for (const message of soapResponseMessage) {",
+									"        pm.expect(message.$.ResponseClass).to.eql(\"Success\");",
+									"        pm.expect(message[\"m:ResponseCode\"]).to.eql(\"NoError\");",
+									"    }",
+									"});",
+									"",
+									"pm.environment.unset(\"folderIdsToDelete\");",
+									"pm.environment.unset(\"rulesTargetFolder\");",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Copy To Folder: Delete Rule Target Folder\");",
+									"var idString = `<t:FolderId Id=\"${pm.environment.get('rulesTargetFolder')}\" />`;",
+									"pm.environment.set(\"folderIdsToDelete\", idString);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteFolder xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" \n                  DeleteType=\"HardDelete\" >\n      <FolderIds>\n        {{folderIdsToDelete}}\n      </FolderIds>\n    </DeleteFolder>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						},
+						"description": "Delete the folders created from CreateFolder test."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Action Mark Importance",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Mark Importance: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules Mark Importance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Mark Importance: Add Rules Mark Importance\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectStrings>\n                                <t:String>test</t:String>\n                            </t:ContainsSubjectStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:MarkImportance>High</t:MarkImportance>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Actions\"][\"t:MarkImportance\"]).to.eql(\"High\");",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Mark Importance: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Mark Importance: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"GetInboxRules RuleTest\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Mark Importance: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Action Send Copy",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Send Copy: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules Send Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Send Copy: Add Rules Send Copy\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectStrings>\n                                <t:String>test</t:String>\n                            </t:ContainsSubjectStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:ForwardToRecipients>\n                                <t:Address>\n                                    <t:Name>David Kennedy</t:Name>\n                                    <t:EmailAddress>test.user@gmail.com</t:EmailAddress>\n                                    <t:RoutingType>SMTP</t:RoutingType>\n                                </t:Address>\n                            </t:ForwardToRecipients>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Actions\"][\"t:ForwardToRecipients\"][\"t:Address\"][\"t:EmailAddress\"]).to.eql(\"test.user@gmail.com\");",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Send Copy: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Send Copy: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Action Send Copy: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Condition Sender Contains",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender Contains: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules with Sender Contains Condition",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender Contains: Add Rules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSenderStrings>\n                                <t:String>test</t:String>\n                                <t:String>multiple words</t:String>\n                           </t:ContainsSenderStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:Delete>true</t:Delete>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:ContainsSenderStrings\"][\"t:String\"].length).to.eql(2);",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:ContainsSenderStrings\"][\"t:String\"].includes(\"test\")).to.be.true;",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:ContainsSenderStrings\"][\"t:String\"].includes(\"multiple words\")).to.be.true;",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender Contains: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender Contains: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender Contains: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Condition Sender Is",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender is: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules with Sender Contains Condition",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender is: Add Rules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:FromAddresses>\n                                <t:Address>\n                                    <t:EmailAddress>bert.muppet@ngrok.com</t:EmailAddress>\n                                </t:Address>\n                                <t:Address>\n                                    <t:EmailAddress>doctor.notes@mail.quattro.rocks</t:EmailAddress>\n                                </t:Address>\n                           </t:FromAddresses>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:Delete>true</t:Delete>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"   ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:FromAddresses\"][\"t:Address\"].length).to.eql(2);",
+									"    for (const fAddress of rules[rules.length - 1][\"t:Conditions\"][\"t:FromAddresses\"][\"t:Address\"]) {",
+									"        pm.expect([\"bert.muppet@ngrok.com\", \"doctor.notes@mail.quattro.rocks\"].includes(fAddress[\"t:EmailAddress\"])).to.be.true;",
+									"    }",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender is: Verify Rule Created\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender is: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Sender is: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Condition Body or Subject Contains",
+			"item": [
+				{
+					"name": "GetInboxRules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    console.log(jsonObject);",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    var rCount = 0;",
+									"    if (inboxRules) {",
+									"        var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"        if (rules && !Array.isArray(rules)) {",
+									"            rules = [rules];",
+									"         }",
+									"         rCount = rules.length;",
+									"    }",
+									"",
+									"    pm.environment.set(\"rulesCount\", rCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Body or Subject contains: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rules with Body or Subject Contains Condition",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Body or Subject contains: Add Rules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:CreateRuleOperation>\n                    <t:Rule>\n                        <t:DisplayName>Subject contains test or </t:DisplayName>\n                        <t:Priority>1</t:Priority>\n                        <t:IsEnabled>true</t:IsEnabled>\n                        <t:IsInError>false</t:IsInError>\n                        <t:Conditions>\n                            <t:ContainsSubjectOrBodyStrings>\n                                <t:String>test</t:String>\n                                <t:String>multiple words</t:String>\n                           </t:ContainsSubjectOrBodyStrings>\n                        </t:Conditions>\n                        <t:Actions>\n                            <t:Delete>true</t:Delete>\n                        </t:Actions>\n                    </t:Rule>\n                </t:CreateRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Rule Created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(jsonObject);",
+									"    var rules = rulesResponse[\"m:InboxRules\"][\"t:Rule\"];",
+									"    if (rules && !Array.isArray(rules)) {",
+									"        rules = [rules];",
+									"    }",
+									"    pm.expect(rules.length).to.eql(Number(pm.environment.get(\"rulesCount\")) + 1);",
+									"",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:ContainsSubjectOrBodyStrings\"][\"t:String\"].length).to.eql(2);",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:ContainsSubjectOrBodyStrings\"][\"t:String\"].includes(\"test\")).to.be.true;",
+									"    pm.expect(rules[rules.length - 1][\"t:Conditions\"][\"t:ContainsSubjectOrBodyStrings\"][\"t:String\"].includes(\"multiple words\")).to.be.true;",
+									"    var ruleIds = rules.map(item => {return item[\"t:RuleId\"]});",
+									"    pm.environment.set(\"ruleIds\", ruleIds);",
+									"    ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Body or Subject contains: GetInboxRules\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete All Rules",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:UpdateInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    var ruleIds = pm.environment.get(\"ruleIds\");",
+									"    var ruleIdIndex = Number(pm.environment.get(\"ruleIdIndex\")) + 1;",
+									"    if (ruleIdIndex < ruleIds.length) {",
+									"        pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"        postman.setNextRequest(\"Delete All Rules\");",
+									"    } else {",
+									"        pm.environment.unset(\"ruleIds\");",
+									"        pm.environment.unset(\"ruleIdIndex\");",
+									"        pm.environment.unset(\"deleteRuleId\");",
+									"        pm.environment.unset(\"rulesCount\");",
+									"    }",
+									"",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Body or Subject contains: Delete All Rules\");",
+									"var ruleIds = pm.environment.get(\"ruleIds\");",
+									"console.log(ruleIds);",
+									"var ruleIdIndex= pm.environment.get(\"ruleIdIndex\") ? Number(pm.environment.get(\"ruleIdIndex\")) : 0;",
+									"pm.environment.set(\"ruleIdIndex\", ruleIdIndex);",
+									"pm.environment.set(\"deleteRuleId\", ruleIds[ruleIdIndex]);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <m:UpdateInboxRules>\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n            <m:RemoveOutlookRuleBlob>true</m:RemoveOutlookRuleBlob>\n            <m:Operations>\n                <t:DeleteRuleOperation>\n                    <t:RuleId>{{deleteRuleId}}</t:RuleId>\n                </t:DeleteRuleOperation>\n            </m:Operations>\n        </m:UpdateInboxRules>\n    </soap:Body>\n</soap:Envelope>\n\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInboxRules Empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    ",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var rulesResponse = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetInboxRulesResponse\"];",
+									"",
+									"    pm.expect(rulesResponse[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    console.log(rulesResponse);",
+									"    var inboxRules = rulesResponse[\"m:InboxRules\"];",
+									"    pm.expect(inboxRules ? inboxRules[\"t:Rule\"].length : 0).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"Condition Body or Subject contains: GetInboxRules Empty\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n    <soap:Header>\n        <t:RequestServerVersion Version=\"Exchange2010_SP1\"/>\n        <t:MailboxCulture>en-US</t:MailboxCulture>\n        <t:TimeZoneContext>\n            <t:TimeZoneDefinition Id=\"Eastern Standard Time\"/>\n        </t:TimeZoneContext>\n    </soap:Header>\n    <soap:Body>\n        <GetInboxRules xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n            <m:MailboxSmtpAddress>{{email}}</m:MailboxSmtpAddress>\n        </GetInboxRules>\n    </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

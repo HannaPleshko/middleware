@@ -1,0 +1,281 @@
+{
+	"info": {
+		"_postman_id": "37cc710e-bad3-449e-b839-4edb3dec9111",
+		"name": "ews attachment tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Attachment Tests",
+			"item": [
+				{
+					"name": "CreateItem for Attachment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"CreateItem for Attachment\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateItemResponse\"][\"m:ResponseMessages\"][\"m:CreateItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    const $ = cheerio.load(responseBody)",
+									"    pm.environment.set('attachmentItemId', $('t\\\\:ItemId').attr('id'))",
+									"    pm.environment.set('attachmentItemChangeKey', $('t\\\\:ItemId').attr('changekey'))",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <CreateItem MessageDisposition=\"SendAndSaveCopy\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <SavedItemFolderId>\n        <t:DistinguishedFolderId Id=\"drafts\" />\n      </SavedItemFolderId>\n      <Items>\n        <t:Message>\n          <t:ItemClass>IPM.Note</t:ItemClass>\n          <t:Subject>Project Action</t:Subject>\n          <t:Body BodyType=\"HTML\">&lt;html dir=\"ltr\"&gt;&lt;html&gt;</t:Body>\n          <t:ToRecipients>\n            <t:Mailbox>\n              <t:EmailAddress>sschmidt@example.com</t:EmailAddress>\n            </t:Mailbox>\n          </t:ToRecipients>\n          <t:IsRead>false</t:IsRead>\n        </t:Message>\n      </Items>\n    </CreateItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateAttachment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const $ = cheerio.load(responseBody)",
+									"pm.environment.set('attachmentId', $('t\\\\:AttachmentId').attr('id'))",
+									"",
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"CreateAttachment\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:CreateAttachmentResponse\"][\"m:ResponseMessages\"][\"m:CreateAttachmentResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    pm.expect(responseMessage[\"m:Attachments\"][\"t:FileAttachment\"][\"t:Name\"]).to.equal(\"robertabbott.jpg\");",
+									"    pm.expect(responseMessage[\"m:Attachments\"][\"t:FileAttachment\"][\"t:ContentType\"]).to.equal(\"image/jpeg\");",
+									"    pm.expect(responseMessage[\"m:Attachments\"][\"t:FileAttachment\"][\"t:Content\"]).to.not.be.empty;",
+									"",
+									"    // pm.expect(responseMessage[\"m:MessageText\"]).to.include(\"CreateAttachment has not been implemented yet\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n<soap:Body>\n  <CreateAttachment xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n    <ParentItemId Id=\"{{attachmentItemId}}\" ChangeKey=\"{{attachmentItemChangeKey}}\"/>\n    <Attachments>\n      <t:FileAttachment>\n                    <t:Name>robertabbott.jpg</t:Name>\n                    <t:ContentType>image/jpeg</t:ContentType>\n                    <t:ContentId></t:ContentId>\n                    <t:IsContactPhoto>false</t:IsContactPhoto>\n                    <t:Content>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\nlYlN1iPdAZ4WA2ycFi6DJKG+wKJZDm…e/lFnWBxurfiif94fI8ncm3vVz5O2htbWyTutflPr3wghdoGh\nGiqQ3NvRsqSpkuA0brtfazw/+80/nmC7mXce+wC4c+4x/MN0EWdt8KA+E3IVl5vJJQJoi4oI\nMMW6kQy2whkFpIQmuJKC2p39Vb6fIHEDr8lrrJCCFZ00/Tqg3bS39CAi1zS4AjYFUuh11sfm\nrarmNr9EEKur3NJbja2FHpZQT6TjjxUXUp8kd2VpvE+tPpmF46oOrO1ikbHyOIzvsVVxcSUU\nJPI1rj4tFlxOn1qab0vTN9rXIU2J1Q825XC/Ug2+KDsUHELHnmBDBfZuFZx8VRc3I8g+vK4w\n2CeMXJJPcCT8kGo1CVuXNf4Y7kHZtV1OM5FgO8LVtT11jLkO+a0FnEVVIzzbI3kDH2SVDqYK\n6QtDYZLO39AoN1NcJTz35gO83UvTauCRx2DgLfBc1r5q2lFhDLa2fQNlT0PFjo3m4eHE2ta2\nUHXZanlfa+LqS6S60XS9Rkma17r2v71tNHNfl7kD6mS3v2UFzwXAeI/NGr35QtNh55Wjxug6\nVoUQELSO4fkpj7BM05nLG0eARZGdUArBDeAESQobhdA0pXKRwn9ECYLJwch8xsm5wgf4pA3S\nJOUxt0EiNyJZCYbhEjcUD2OUmKyCwIpACB9l4/8ALX/3/R+x6f8AX6kvXZeV5C8tM/3/AEfs\nen/Xakg4akkkgSSSSDrXkf8A300b8R+jaivoawWXzy8j/wC+mjfiP0bUF9Dg1A8IjAhsZYoo\nwgMwIgCHGUZAcLJWGlK90DCQiNN0ydgwnRm2EDHFZiF09zFjlxhBkb52XNe1bWbkQsdi1jbw\nW28U6yymiObvI964xrFUZpHPcdyTlBUyDm3V7wBq5oapp/keQ0+85VROwbpjNrbdzvFB6U5o\n6iHBBjkFu/cZXn/tH0Z9FVvcBaN7vR7lt3ZfxeI3/ulQ+42YScXPct07QuG2ahSEtsXht4zu\nST3IPPEcpPVMFid02qhfTSvhkaWuY62etuqE1ougFVPANuU+vog4OwU6UAi1lCAsUCDDgqRB\nKA8Jk98dEJn/AEUGy0MwDhZbOydvmlz+inIIwtlirQW2QR9VYSS4Zuq5+kU9Wzzc7cDGTZWr\nnDf5IFXY9LW+aCjHDJpHf2TeeP8AlDRew9a2iip45WBpZyHFyQq59dM0ei7A6J1JxGGXEsXv\nJQbhQcLUzm3BaX9c/Kynf+CaYx3ewH4LW9I4upm5wz3q2qeP6Xl5fONFvFBbaJwxRxudaNoH\niAr5sVHCPsMx4Bc1l4/p23/tmi/io0fGlM4kulaR3X3QbrrTqGYFnmgb9wC0qr7OtIc4yvjA\nO9r2yq2bjGEOPm7G/cUCTXHznew7roK3XtPhgPJCOVoOFmgk5RbdO1SZp3yoHnAMg28EEmtd\n1V1wRQmSYOtgLWPOF5AG52XUuBNO81DzHc2OyC9dHy/BCBRpSgyIItQ3OEwKSEJkeTlBh7bh\nPa3CXL4pz0DHBNATykAgGRumMR7JNCDDQUSPG6w1ZdlAcOCwXpgbYLAQMe/K8k+Wh/v6j9j0\n/wCu1JetpGWyvI/lmH+/qT2RB+u1FBxFJJJAkkkkHWPJDdbjPRj7R+j6gvoNFK4lfPvyQR/G\nejfiP0fUF9CmttsglMCeRdBhdfdGQGZhO8UxuN0QIMtJUiJCibhGjOECIvlINWQUi5AJ8pvZ\nRtb1FlNCXk9Db1qS6zRzONh4rl/aRq/nXGJh9EeKCi4h1d1TIXE+jfGcKimtuULzhbg7DZNb\nUX3CBz339SiTOO2wRX1AGFAqHOcbN2KB1+Qh7XHnabg9bhdl7K+NRNGKeod6\nbRZhJuSfeuIP\n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</t:Content>\n      </t:FileAttachment>\n    </Attachments>\n  </CreateAttachment>\n</soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAttachment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"GetAttachment\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:GetAttachmentResponse\"][\"m:ResponseMessages\"][\"m:GetAttachmentResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    // pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"ErrorCannotFindFileAttachment\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\nxmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\nxmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\nxmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <GetAttachment xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n    xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n            <AttachmentShape>\n                <t:IncludeMimeContent>true</t:IncludeMimeContent>\n            </AttachmentShape>\n      <AttachmentIds>\n        <t:AttachmentId Id=\"{{attachmentId}}\"/>\n      </AttachmentIds>\n    </GetAttachment>\n  </soap:Body>\n</soap:Envelope>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteAttachment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"DeleteAttachment\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteAttachmentResponse\"][\"m:ResponseMessages\"][\"m:DeleteAttachmentResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"    // pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"ErrorCannotFindFileAttachment\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n               xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n               xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteAttachment xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\"\n                      xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n      <AttachmentIds>\n        <t:AttachmentId Id=\"{{attachmentId}}\"/>\n      </AttachmentIds>\n    </DeleteAttachment>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cleanup attachmentItemId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status test\", function () {",
+									"    console.log(\"Cleanup CopiedItemId\");",
+									"    pm.response.to.be.ok;",
+									"",
+									"    var jsonObject = xml2Json(responseBody);",
+									"    console.log(jsonObject);",
+									"    var responseMessage = jsonObject[\"soap:Envelope\"][\"soap:Body\"][\"m:DeleteItemResponse\"][\"m:ResponseMessages\"][\"m:DeleteItemResponseMessage\"];",
+									"",
+									"    pm.expect(responseMessage[\"m:ResponseCode\"]).to.equal(\"NoError\");",
+									"",
+									"    pm.environment.unset(\"attachmentId\");",
+									"    pm.environment.unset(\"attachmentItemId\");",
+									"    pm.environment.unset(\"attachmentItemChangeKey\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n  xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\">\n  <soap:Body>\n    <DeleteItem DeleteType=\"HardDelete\" xmlns=\"http://schemas.microsoft.com/exchange/services/2006/messages\">\n      <ItemIds>\n          <t:ItemId Id=\"{{attachmentItemId}}\" ChangeKey=\"{{attachmentItemChangeKey}}\" />\n      </ItemIds>\n    </DeleteItem>\n  </soap:Body>\n</soap:Envelope>\n",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const email = pm.environment.get(\"email\");",
+					"if (!email) {",
+					"    throw new Error(\"email environment variable not set\");",
+					"}",
+					"const password = pm.environment.get(\"password\");",
+					"if (!password) {",
+					"    throw new Error(\"password environment variable not set\");",
+					"}",
+					"",
+					"const authValue = `${email}:${password}`",
+					"const authHeader = `Basic ${Buffer.from(authValue).toString('base64')}`;",
+					"pm.request.headers.add( { key: 'Authorization', value: authHeader } );",
+					"pm.request.headers.add( { key: 'X-User-Identity', value: email } );"
+				]
+			}
+		}
+	]
+}

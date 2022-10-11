@@ -1,0 +1,36 @@
+export declare const objectHandlers: {
+    BEGIN(component: any, parameters: any, curr: any, stack: any): {
+        type: any;
+        params: any;
+    };
+    END(value: any, parameters: any, curr: any, stack: any): any;
+    COMMENT: (value: any, parameters: any, curr: any) => any;
+    SUMMARY: (value: any, parameters: any, curr: any) => any;
+    DESCRIPTION: (value: any, parameters: any, curr: any) => any;
+    URL: (value: any, parameters: any, curr: any) => any;
+    UID: (value: any, parameters: any, curr: any) => any;
+    LOCATION: (value: any, parameters: any, curr: any) => any;
+    DTSTART(value: any, parameters: any, curr: any): any;
+    DTEND: (value: any, parameters: any, curr: any) => any;
+    EXDATE: (value: any, parameters: any, curr: any) => any;
+    ' CLASS': (value: any, parameters: any, curr: any) => any;
+    TRANSP: (value: any, parameters: any, curr: any) => any;
+    GEO: (value: any, parameters: any, curr: any) => any;
+    'PERCENT-COMPLETE': (value: any, parameters: any, curr: any) => any;
+    COMPLETED: (value: any, parameters: any, curr: any) => any;
+    CATEGORIES: (value: any, parameters: any, curr: any) => any;
+    FREEBUSY: (value: any, parameters: any, curr: any) => any;
+    DTSTAMP: (value: any, parameters: any, curr: any) => any;
+    CREATED: (value: any, parameters: any, curr: any) => any;
+    'LAST-MODIFIED': (value: any, parameters: any, curr: any) => any;
+    'RECURRENCE-ID': (value: any, parameters: any, curr: any) => any;
+    RRULE(value: any, parameters: any, curr: any, stack: any, line: any): any;
+};
+export declare function handleObject(name: any, value: any, parameters: any, ctx: any, stack: any, line: any): any;
+export declare function handleObject(name: any, value: any, parameters: any, ctx: any, stack: any, line: any): any;
+export declare function parseLines(lines: any, limit: any, ctx: any, stack: any, lastIndex: any, cb: any): any;
+export declare function parseLines(lines: any, limit: any, ctx: any, stack: any, lastIndex: any, cb: any): any;
+export declare function getLineBreakChar(string: any): "\n" | "\r" | "\r?\n";
+export declare function getLineBreakChar(string: any): "\n" | "\r" | "\r?\n";
+export declare function parseICS(string: any, cb: any): any;
+export declare function parseICS(string: any, cb: any): any;
